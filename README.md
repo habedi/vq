@@ -1,68 +1,39 @@
-# A Template for Rust Projects
+# Vq: A Vector Quantization Library for Rust
 
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: light)" srcset="assets/logos/rustacean-flat-happy.svg">
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logos/rustacean-flat-happy.svg">
-    <img alt="template-rust-project logo" src="assets/logos/rustacean-flat-happy.svg" height="40%" width="40%">
-  </picture>
-</div>
-<br>
+[<img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/habedi/vq/tests.yml?label=Tests&style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/habedi/vq/actions/workflows/tests.yml)
+[<img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/habedi/vq?style=for-the-badge&labelColor=555555&logo=codecov" height="20">](https://codecov.io/gh/habedi/vq)
+[<img alt="CodeFactor" src="https://img.shields.io/codefactor/grade/github/habedi/vq?style=for-the-badge&labelColor=555555&logo=codefactor" height="20">](https://www.codefactor.io/repository/github/habedi/vq)
+[<img alt="Crates.io" src="https://img.shields.io/crates/v/vq.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/vq)
+[<img alt="Docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/vq)
+[<img alt="Downloads" src="https://img.shields.io/crates/d/vq?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://crates.io/crates/vq)
+[<img alt="Docs" src="https://img.shields.io/badge/docs-latest-3776ab?style=for-the-badge&labelColor=555555&logo=readthedocs" height="20">](docs)
+[<img alt="License" src="https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?style=for-the-badge&labelColor=555555&logo=open-source-initiative" height="20">](https://github.com/habedi/vq)
 
-<p align="center">
-  <a href="https://github.com/habedi/template-rust-project/actions/workflows/tests.yml">
-    <img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/habedi/template-rust-project/tests.yml?label=Tests&style=flat&labelColor=555555&logo=github">
-  </a>
-  <a href="https://github.com/habedi/template-rust-project/actions/workflows/build_linux.yml">
-    <img alt="Linux Build" src="https://img.shields.io/github/actions/workflow/status/habedi/template-rust-project/build_linux.yml?label=Linux%20Build&style=flat&labelColor=555555&logo=linux">
-  </a>
-  <a href="https://github.com/habedi/template-rust-project/actions/workflows/build_windows.yml">
-    <img alt="Windows Build" src="https://img.shields.io/github/actions/workflow/status/habedi/template-rust-project/build_windows.yml?label=Windows%20Build&style=flat&labelColor=555555&logo=github">
-  </a>
-  <a href="https://github.com/habedi/template-rust-project/actions/workflows/build_macos.yml">
-    <img alt="MacOS Build" src="https://img.shields.io/github/actions/workflow/status/habedi/template-rust-project/build_macos.yml?label=MacOS%20Build&style=flat&labelColor=555555&logo=apple">
-  </a>
-  <br>
-<a href="docs">
-    <img alt="Docs" src="https://img.shields.io/badge/docs-latest-3776ab?style=flat&labelColor=555555&logo=readthedocs">
-  </a>
-  <a href="https://github.com/habedi/template-rust-project">
-    <img alt="License" src="https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?style=flat&labelColor=555555&logo=open-source-initiative">
-  </a>
-  <a href="https://codecov.io/gh/habedi/template-rust-project">
-    <img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/habedi/template-rust-project?style=flat&labelColor=555555&logo=codecov">
-  </a>
-  <a href="https://www.codefactor.io/repository/github/habedi/template-rust-project">
-    <img alt="CodeFactor" src="https://img.shields.io/codefactor/grade/github/habedi/template-rust-project?style=flat&labelColor=555555&logo=codefactor">
-  </a>
-  <br>
-  <a href="https://crates.io/crates/template-rust-project">
-    <img alt="Crates.io" src="https://img.shields.io/crates/v/template-rust-project.svg?style=flat&color=fc8d62&logo=rust">
-  </a>
-  <a href="https://docs.rs/template-rust-project">
-    <img alt="Docs.rs" src="https://img.shields.io/badge/docs.rs-template--rust--project-66c2a5?style=flat&labelColor=555555&logo=docs.rs">
-  </a>
-  <a href="https://crates.io/crates/template-rust-project">
-    <img alt="Downloads" src="https://img.shields.io/crates/d/template-rust-project?style=flat&labelColor=555555&logo=rust">
-  </a>
-  <a href="https://github.com/habedi/template-rust-project/releases/latest">
-    <img alt="Release" src="https://img.shields.io/github/release/habedi/template-rust-project.svg?style=flat&labelColor=555555&logo=github">
-  </a>
-  <a href="https://github.com/habedi/template-rust-project/releases">
-    <img alt="Total Downloads" src="https://img.shields.io/github/downloads/habedi/template-rust-project/total.svg?style=flat&labelColor=555555&logo=github">
-  </a>
-</p>
+**Vq** is a Rust library that implements several popular vector quantization algorithms.
+It's designed to be fast, simple, and easy to use.
 
-This is a template repository with a minimalistic structure to make it easier to start a new Rust project.
-I share it here in case it might be useful to others.
+## What It Offers
 
-## Features
+- [**Binary Quantization (BQ)**](src/bq.rs)
+- [**Scalar Quantization (SQ)**](src/sq.rs)
+- [**Product Quantization (PQ)**](https://ieeexplore.ieee.org/document/5432202)
+- [**Optimized Product Quantization (OPQ)**](https://ieeexplore.ieee.org/document/6619223)
+- [**Tree-structured Vector Quantization (TSVQ)**](https://ieeexplore.ieee.org/document/515493)
+- [**Residual Vector Quantization (RVQ)**](https://pmc.ncbi.nlm.nih.gov/articles/PMC3231071/)
 
-- Minimalistic project structure
-- Pre-configured GitHub Actions for running tests and making releases for different platforms
-- Makefile for managing common tasks such as formatting, testing, linting, and building
-- Example configuration files for common tools like `rustfmt`, `clippy`, and `editorconfig`
-- GitHub badges for tests, builds, code quality and coverage, documentation, etc.
+[//]: # (It uses SIMD for speed and has a clean API for working with vectors.)
+
+## Installation
+
+```bash
+cargo add vq
+```
+
+## Documentation
+
+The documentation for the latest release can be found [here](docs).
+
+Additionally, check out the [tests](tests/) directory for detailed examples of how to use Vq.
 
 ## Contributing
 
@@ -70,7 +41,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to make a contribution
 
 ## License
 
-This project is licensed under either of these:
+Spart is available under the terms of either of the following licenses:
 
-* MIT License ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
-* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
+* MIT License ([LICENSE-MIT](LICENSE-MIT))
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))

@@ -1,28 +1,36 @@
 [package]
-name = "template-rust-project"
-version = "0.2.3"
-description = "A template for Rust projects"
-repository = "https://github.com/habedi/template-rust-project"
+name = "vq"
+version = "0.1.0"
+description = "A vector quantization library for Rust"
+repository = "https://github.com/habedi/vq"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-keywords = ["project-template", "rust", "library", "application"]
+keywords = ["vq", "vector-quantization", "clustering", "nearest-neighbor", "data-compression"]
 authors = ["Hassan Abedi <hassan.abedi.t@gmail.com>"]
-homepage = "https://github.com/habedi/template-rust-project"
-documentation = "https://docs.rs/template-rust-project"
+homepage = "https://github.com/habedi/vq"
+documentation = "https://docs.rs/vq"
 #categories = ["development-tools"]
 edition = "2021"
 
 [lib]
-name = "template_rust_project"
+name = "vq"
 path = "src/lib.rs"
 
 [[bin]]
-name = "template-rust-project"
+name = "vq"
 path = "src/main.rs"
 
 [dependencies]
-clap = "4.5.27"
-log = "0.4.25"
 tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+ctor = "0.2.9"
+rand = "0.9.0"
+half = "2.4.1"
+nalgebra = "0.33.2"
 
 [dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "my_benchmarks"
+harness = false

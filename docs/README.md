@@ -1,5 +1,3 @@
-# Project Documentation
+# Vq Documentation
 
-Put your project documentation here.
-
-<img src="../assets/logos/rustacean-flat-noshadow.svg" align="center" width="25%"/>
+The building blocks of the Vq library are the **vectors** and **quantizers**.
