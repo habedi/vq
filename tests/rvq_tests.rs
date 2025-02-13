@@ -15,7 +15,7 @@ fn test_rvq_dimension() {
     let max_iters = 50;
     let seed = 42;
     let epsilon = 1e-6;
-    let rvq = ResidualQuantizer::new(
+    let rvq = ResidualQuantizer::fit(
         &training_data,
         stages,
         k,
@@ -39,7 +39,7 @@ fn test_rvq_reconstruction_error() {
     let max_iters = 50;
     let seed = 42;
     let epsilon = 1e-6;
-    let rvq = ResidualQuantizer::new(
+    let rvq = ResidualQuantizer::fit(
         &training_data,
         stages,
         k,

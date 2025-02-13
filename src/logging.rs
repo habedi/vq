@@ -1,7 +1,6 @@
 use ctor::ctor;
 use std::env;
 use tracing::Level;
-use tracing_subscriber;
 
 #[ctor]
 fn set_debug_level() {
@@ -12,7 +11,7 @@ fn set_debug_level() {
             // Normalize the string for case-insensitive comparison.
             let v = v.trim().to_lowercase();
             // Consider these values as "false".
-            !(v == "0" || v == "false" || v == "no" || v == "off" || v == "")
+            !(v == "0" || v == "false" || v == "no" || v == "off" || v.is_empty())
         })
         .unwrap_or(false);
 

@@ -11,7 +11,7 @@ use rayon::prelude::*;
 /// ```
 /// # use vq::vector::Vector;
 /// # use vq::bq::BinaryQuantizer;
-/// let quantizer = BinaryQuantizer::new(0.5, 0, 1);
+/// let quantizer = BinaryQuantizer::fit(0.5, 0, 1);
 /// let input = Vector::new(vec![0.3, 0.5, 0.8]);
 /// let quantized = quantizer.quantize(&input);
 /// // quantized now contains [0, 1, 1]
@@ -35,7 +35,7 @@ impl BinaryQuantizer {
     ///
     /// # Returns
     /// A `BinaryQuantizer` instance configured with the specified parameters.
-    pub fn new(threshold: f32, low: u8, high: u8) -> Self {
+    pub fn fit(threshold: f32, low: u8, high: u8) -> Self {
         Self {
             threshold,
             low,

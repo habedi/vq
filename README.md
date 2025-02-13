@@ -6,29 +6,31 @@
 [<img alt="Crates.io" src="https://img.shields.io/crates/v/vq.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/vq)
 [<img alt="Docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/vq)
 [<img alt="Downloads" src="https://img.shields.io/crates/d/vq?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://crates.io/crates/vq)
+[<img alt="MSRV" src="https://img.shields.io/badge/MSRV-1.83.0-orange?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://github.com/rust-lang/rust/releases/tag/1.83.0)
+<br>
 [<img alt="Docs" src="https://img.shields.io/badge/docs-latest-3776ab?style=for-the-badge&labelColor=555555&logo=readthedocs" height="20">](docs)
 [<img alt="License" src="https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?style=for-the-badge&labelColor=555555&logo=open-source-initiative" height="20">](https://github.com/habedi/vq)
 
-Vq (**v**[ector] **q**[uantiztion]) is a Rust library that implements several
+Vq (**v**[ector] **q**[uantizer]) is a Rust library that implements several
 popular [vector quantization](https://en.wikipedia.org/wiki/Vector_quantization) algorithms including binary, scalar,
 and product quantization algorithms.
-It provides a simple, efficient API for data compression that help reduce memory usage and computational overhead.
+It provides a simple, efficient API for data compression that helps reduce memory usage and computational overhead.
 
 ## Features
 
 - Implemented Algorithms:
-    - [**Binary Quantization (BQ)**](src/bq.rs)
-    - [**Scalar Quantization (SQ)**](src/sq.rs)
-    - [**Product Quantization (PQ)**](https://ieeexplore.ieee.org/document/5432202)
-    - [**Optimized Product Quantization (OPQ)**](https://ieeexplore.ieee.org/document/6619223)
-    - [**Tree-structured Vector Quantization (TSVQ)**](https://ieeexplore.ieee.org/document/515493)
-    - [**Residual Vector Quantization (RVQ)**](https://pmc.ncbi.nlm.nih.gov/articles/PMC3231071/)
+    - [Binary Quantization (BQ)](src/bq.rs)
+    - [Scalar Quantization (SQ)](src/sq.rs)
+    - [Product Quantization (PQ)](https://ieeexplore.ieee.org/document/5432202)
+    - [Optimized Product Quantization (OPQ)](https://ieeexplore.ieee.org/document/6619223)
+    - [Tree-structured Vector Quantization (TSVQ)](https://ieeexplore.ieee.org/document/515493)
+    - [Residual Vector Quantization (RVQ)](https://pmc.ncbi.nlm.nih.gov/articles/PMC3231071/)
 
 - Parallelized vector operations for large vectors using [Rayon](https://crates.io/crates/rayon).
-- Flexible quantization algorithm implementations that support custom distance functions (e.g., Euclidean, Cosine,
-  Chebyshev, etc.).
-- Support for quantizing vectors of `f32` to `f16` (using [half](https://github.com/starkat99/half-rs/tree/main/src)) or `u8` data types.
-- Simple and intuitive API for all quantization algorithms.
+- Flexible quantization algorithm implementations that support using various distance metrics such as Euclidean, Cosine,
+  Manhattan distances.
+- Support for quantizing vectors of `f32` to `f16` (using [half](https://crates.io/crates/half)) or `u8` data types.
+- Simple, intuitive, and uniform API for all quantization algorithms.
 
 ## Installation
 
@@ -36,15 +38,17 @@ It provides a simple, efficient API for data compression that help reduce memory
 cargo add vq
 ```
 
+*Vq requires Rust 1.83 or later.*
+
 ## Documentation
 
-Find the latest documentation [here](docs) or on [docs.rs](https://docs.rs/vq).
+Find the latest documentation on [docs.rs](https://docs.rs/vq).
 
-Check out the [tests](tests/) directory for detailed examples of using Vq.
+Check out [vq_examples.rs](src/bin/vq_examples.rs) the [tests](tests/) directory for detailed examples of using Vq.
 
 ### Quick Example
 
-Here's a simple example using the scalar quantization:
+Here's a simple example using the SQ algorithm to quantize a vector:
 
 ```rust
 use vq::sq::ScalarQuantizer;
@@ -52,7 +56,7 @@ use vq::vector::Vector;
 
 fn main() {
     // Create a scalar quantizer for values in the range [0.0, 1.0] with 256 levels.
-    let quantizer = ScalarQuantizer::new(0.0, 1.0, 256);
+    let quantizer = ScalarQuantizer::fit(0.0, 1.0, 256);
 
     // Create an input vector.
     let input = Vector::new(vec![0.1, 0.5, -0.8, -0.3, 0.9]);
@@ -64,9 +68,22 @@ fn main() {
 }
 ```
 
+## Performance
+
+Check out the [notebooks](notebooks/) directory for information on how to evaluate the performance of the implemented
+algorithms.
+Additionally, see the content of [src/bin](src/bin/) directory for the scripts used for the evaluation.
+
+> On a ThinkPad T14 laptop with an Intel i7-1355U CPU and 32GB of RAM, the performance of the PQ algorithm for
+> quantizing one million vectors of 128 dimensions (into 16 subspaces with 256 centroids per subspace) is as follows:
+>   - Training Time: 232.5 seconds
+>   - Quantization Time: 34.1 seconds
+>   - Reconstruction Error: 0.02
+>   - Recall@10: 0.19
+
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing.
 
 ## License
 

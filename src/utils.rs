@@ -74,3 +74,55 @@ pub fn lbg_quantize(
     }
     centroids
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::vector::Vector;
+
+    // Helper function to create the test data.
+    fn get_data() -> Vec<Vector<f32>> {
+        vec![
+            Vector::new(vec![1.0, 2.0]),
+            Vector::new(vec![2.0, 3.0]),
+            Vector::new(vec![3.0, 4.0]),
+            Vector::new(vec![4.0, 5.0]),
+        ]
+    }
+
+    #[test]
+    fn lbg_quantize_basic_functionality() {
+        let data = get_data();
+        let centroids = lbg_quantize(&data, 2, 10, 42);
+        assert_eq!(centroids.len(), 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "k must be greater than 0")]
+    fn lbg_quantize_k_zero() {
+        let data = vec![Vector::new(vec![1.0, 2.0]), Vector::new(vec![2.0, 3.0])];
+        lbg_quantize(&data, 0, 10, 42);
+    }
+
+    #[test]
+    #[should_panic(expected = "Not enough data points for k clusters")]
+    fn lbg_quantize_not_enough_data_points() {
+        let data = vec![Vector::new(vec![1.0, 2.0])];
+        lbg_quantize(&data, 2, 10, 42);
+    }
+
+    #[test]
+    fn lbg_quantize_single_data_point() {
+        let data = vec![Vector::new(vec![1.0, 2.0])];
+        let centroids = lbg_quantize(&data, 1, 10, 42);
+        assert_eq!(centroids.len(), 1);
+        assert_eq!(centroids[0], Vector::new(vec![1.0, 2.0]));
+    }
+
+    #[test]
+    fn lbg_quantize_multiple_iterations() {
+        let data = get_data();
+        let centroids = lbg_quantize(&data, 2, 100, 42);
+        assert_eq!(centroids.len(), 2);
+    }
+}

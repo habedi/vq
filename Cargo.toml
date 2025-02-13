@@ -1,24 +1,43 @@
 [package]
 name = "vq"
-version = "0.1.1"
+version = "0.1.3"
 description = "A vector quantization library for Rust"
 repository = "https://github.com/habedi/vq"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-keywords = ["vq", "vector-quantization", "clustering", "nearest-neighbor", "data-compression"]
+keywords = ["vector-quantization", "quantization", "nearest-neighbor", "data-compression", "embeddings"]
 authors = ["Hassan Abedi <hassan.abedi.t@gmail.com>"]
 homepage = "https://github.com/habedi/vq"
 documentation = "https://docs.rs/vq"
-#categories = ["development-tools"]
+categories = ["algorithms", "compression", "data-structures"]
 edition = "2021"
+rust-version = "1.83"
+
+include = [
+    "src/*",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+]
 
 [lib]
 name = "vq"
 path = "src/lib.rs"
 
+[features]
+default = []  # No features enabled by default
+binaries = []
+
 [[bin]]
-name = "vq"
-path = "src/main.rs"
+name = "eval"
+path = "src/bin/eval.rs"
+required-features = ["binaries"]
+
+[[bin]]
+name = "vq-examples"
+path = "src/bin/vq_examples.rs"
+required-features = ["binaries"]
 
 [dependencies]
 tracing = "0.1.41"
@@ -28,10 +47,14 @@ rand = "0.9.0"
 half = "2.4.1"
 nalgebra = "0.33.2"
 rayon = "1.10"
+anyhow = "1.0.95"
+rand_distr = "0.5.0"
+serde = { version = "1.0.217", features = ["derive"] }
+clap = { version = "4.5.29", features = ["derive"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [[bench]]
-name = "my_benchmarks"
+name = "main"
 harness = false

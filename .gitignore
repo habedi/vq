@@ -79,3 +79,5 @@ Cargo.lock
 # Miscellaneous files and directories to ignore
 # Add any additional file patterns a directory names that should be ignored down here
 .DS_Store
+benchmark_results.csv
+eval_*.csv

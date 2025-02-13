@@ -3,7 +3,7 @@ use rayon::prelude::*;
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
-// Size threshold for enabling parallel computation.
+/// Size threshold for enabling parallel computation.
 pub const PARALLEL_THRESHOLD: usize = 1024;
 
 /// Abstraction for real numbers.
@@ -150,6 +150,11 @@ impl<T: Real> Vector<T> {
     /// Returns the number of elements.
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    // Returns true if the vector is empty.
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
     /// Returns a slice of the data.

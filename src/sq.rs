@@ -12,7 +12,7 @@ use rayon::prelude::*;
 /// ```
 /// # use vq::vector::Vector;
 /// # use vq::sq::ScalarQuantizer;
-/// let quantizer = ScalarQuantizer::new(0.0, 1.0, 256);
+/// let quantizer = ScalarQuantizer::fit(0.0, 1.0, 256);
 /// let input = Vector::new(vec![0.1, 0.5, 0.9]);
 /// let output = quantizer.quantize(&input);
 /// // output now contains quantized values for each input element.
@@ -38,7 +38,7 @@ impl ScalarQuantizer {
     ///
     /// # Panics
     /// Panics if `max` is not greater than `min`, or if `levels` is not within the valid range.
-    pub fn new(min: f32, max: f32, levels: usize) -> Self {
+    pub fn fit(min: f32, max: f32, levels: usize) -> Self {
         assert!(max > min, "max must be greater than min");
         assert!(levels >= 2, "levels must be at least 2");
         assert!(levels <= 256, "levels must be no more than 256");
@@ -67,7 +67,7 @@ impl ScalarQuantizer {
     /// ```
     /// # use vq::vector::Vector;
     /// # use vq::sq::ScalarQuantizer;
-    /// let quantizer = ScalarQuantizer::new(0.0, 1.0, 256);
+    /// let quantizer = ScalarQuantizer::fit(0.0, 1.0, 256);
     /// let input = Vector::new(vec![0.0, 0.5, 1.0]);
     /// let output = quantizer.quantize(&input);
     /// // output is a Vector<u8> with quantized values.

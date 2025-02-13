@@ -7,7 +7,7 @@ use rayon::prelude::*;
 ///
 /// Each node holds a centroid (the mean of the training data at that node)
 /// and optionally left/right child nodes representing further splits.
-pub struct TSVQNode {
+struct TSVQNode {
     /// The centroid of the training data at this node.
     pub centroid: Vector<f32>,
     /// Left subtree (if any).
@@ -26,7 +26,7 @@ impl TSVQNode {
     ///
     /// # Returns
     /// A `TSVQNode` containing the centroid and (optionally) left/right child nodes.
-    pub fn new(training_data: &[Vector<f32>], max_depth: usize) -> Self {
+    pub fn fit(training_data: &[Vector<f32>], max_depth: usize) -> Self {
         // Compute the centroid of the training data.
         let centroid = mean_vector(training_data);
         // If we've reached maximum depth or have one or fewer vectors, make a leaf.
@@ -81,14 +81,14 @@ impl TSVQNode {
         let (left, right) = rayon::join(
             || {
                 if !left_data.is_empty() && left_data.len() < training_data.len() {
-                    Some(Box::new(TSVQNode::new(&left_data, max_depth - 1)))
+                    Some(Box::new(TSVQNode::fit(&left_data, max_depth - 1)))
                 } else {
                     None
                 }
             },
             || {
                 if !right_data.is_empty() && right_data.len() < training_data.len() {
-                    Some(Box::new(TSVQNode::new(&right_data, max_depth - 1)))
+                    Some(Box::new(TSVQNode::fit(&right_data, max_depth - 1)))
                 } else {
                     None
                 }
@@ -143,7 +143,7 @@ impl TSVQNode {
 /// (centroid) of its data, and leaf nodes provide the final quantized representations.
 pub struct TSVQ {
     /// The root node of the TSVQ tree.
-    pub root: TSVQNode,
+    root: TSVQNode,
     /// The distance metric used for traversing the tree.
     pub distance: Distance,
 }
@@ -159,7 +159,7 @@ impl TSVQ {
     /// # Returns
     /// A new `TSVQ` instance with the constructed tree and stored distance metric.
     pub fn new(training_data: &[Vector<f32>], max_depth: usize, distance: Distance) -> Self {
-        let root = TSVQNode::new(training_data, max_depth);
+        let root = TSVQNode::fit(training_data, max_depth);
         TSVQ { root, distance }
     }
 
