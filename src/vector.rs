@@ -8,12 +8,12 @@ pub const PARALLEL_THRESHOLD: usize = 1024;
 
 /// Abstraction for real numbers.
 pub trait Real:
-    Copy
-    + PartialOrd
-    + Add<Output = Self>
-    + Sub<Output = Self>
-    + Mul<Output = Self>
-    + Div<Output = Self>
+Copy
++ PartialOrd
++ Add<Output=Self>
++ Sub<Output=Self>
++ Mul<Output=Self>
++ Div<Output=Self>
 {
     fn zero() -> Self;
     fn one() -> Self;

@@ -1,7 +1,7 @@
 # Variables
 PKG = github.com/habedi/vq
 BINARY_NAME = $(or $(PROJ_BINARY), $(notdir $(PKG)-examples))
-BINARY = $(BINARY_NAME)
+BINARY = target/release/$(BINARY_NAME)
 PATH := /snap/bin:$(PATH)
 CARGO_TERM_COLOR = always
 RUST_BACKTRACE = 1
@@ -33,12 +33,12 @@ coverage: format ## Generate test coverage report
 .PHONY: build
 build: format ## Build the binary for the current platform
 	@echo "Building the project..."
-	@DEBUG_VQ=$(DEBUG_VQ) cargo build --release --features binaries
+	@DEBUG_VQ=$(DEBUG_VQ) cargo build --release
 
 .PHONY: run
 run: build ## Build and run the binary
 	@echo "Running the $(BINARY) binary..."
-	@DEBUG_VQ=$(DEBUG_VQ) cargo run --release --features binaries --bin $(BINARY)
+	@DEBUG_VQ=$(DEBUG_VQ) ./$(BINARY)
 
 .PHONY: clean
 clean: ## Remove generated and temporary files
@@ -81,14 +81,14 @@ bench: ## Run benchmarks
 eval: ## Evaluate an implementation (the ALG should be the algorithm name, e.g., bq, sq, pq, opq, tsvq, rvq)
 	@echo && if [ -z "$(ALG)" ]; then echo "Please provide the ALG argument"; exit 1; fi
 	@echo "Evaluating implementation with argument: $(ALG)"
-	@cargo run --release --features binaries --bin eval -- --eval $(ALG)
+	@cargo run --release --bin eval -- --eval $(ALG)
 
 .PHONY: eval-all
 eval-all: ## Evaluate all the implementations (bq, sq, pq, opq, tsvq, rvq)
 	@echo "Evaluating all implementations..."
-	@make eval ALG=bq
-	@make eval ALG=sq
-	@make eval ALG=pq
-	@make eval ALG=opq
-	@make eval ALG=tsvq
-	@make eval ALG=rvq
+	@cargo run --release --bin eval -- --eval bq
+	@cargo run --release --bin eval -- --eval sq
+	@cargo run --release --bin eval -- --eval pq
+	@cargo run --release --bin eval -- --eval opq
+	@cargo run --release --bin eval -- --eval tsvq
+	@cargo run --release --bin eval -- --eval rvq

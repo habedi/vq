@@ -6,7 +6,6 @@
 [<img alt="Crates.io" src="https://img.shields.io/crates/v/vq.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/vq)
 [<img alt="Docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/vq)
 [<img alt="Downloads" src="https://img.shields.io/crates/d/vq?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://crates.io/crates/vq)
-[<img alt="MSRV" src="https://img.shields.io/badge/MSRV-1.83.0-orange?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://github.com/rust-lang/rust/releases/tag/1.83.0)
 <br>
 [<img alt="Docs" src="https://img.shields.io/badge/docs-latest-3776ab?style=for-the-badge&labelColor=555555&logo=readthedocs" height="20">](docs)
 [<img alt="License" src="https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?style=for-the-badge&labelColor=555555&logo=open-source-initiative" height="20">](https://github.com/habedi/vq)
@@ -38,13 +37,13 @@ It provides a simple, efficient API for data compression that helps reduce memor
 cargo add vq
 ```
 
-*Vq requires Rust 1.83 or later.*
+*Vq requires Rust 1.80 or later.*
 
 ## Documentation
 
-Find the latest documentation on [docs.rs](https://docs.rs/vq).
+Find the latest documentation [here](docs) or on [docs.rs](https://docs.rs/vq).
 
-Check out [vq_examples.rs](src/bin/vq_examples.rs) the [tests](tests/) directory for detailed examples of using Vq.
+Check out [examples.rs](src/bin/examples.rs) the [tests](tests/) directory for detailed examples of using Vq.
 
 ### Quick Example
 
@@ -74,6 +73,7 @@ Check out the [notebooks](notebooks/) directory for information on how to evalua
 algorithms.
 Additionally, see the content of [src/bin](src/bin/) directory for the scripts used for the evaluation.
 
+> [!TIP]
 > On a ThinkPad T14 laptop with an Intel i7-1355U CPU and 32GB of RAM, the performance of the PQ algorithm for
 > quantizing one million vectors of 128 dimensions (into 16 subspaces with 256 centroids per subspace) is as follows:
 >   - Training Time: 232.5 seconds
