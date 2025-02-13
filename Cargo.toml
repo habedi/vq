@@ -1,6 +1,6 @@
 [package]
 name = "vq"
-version = "0.1.0"
+version = "0.1.1"
 description = "A vector quantization library for Rust"
 repository = "https://github.com/habedi/vq"
 license = "MIT OR Apache-2.0"
@@ -27,6 +27,7 @@ ctor = "0.2.9"
 rand = "0.9.0"
 half = "2.4.1"
 nalgebra = "0.33.2"
+rayon = "1.10"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

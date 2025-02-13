@@ -22,12 +22,12 @@ fn test_opq_dimension() {
         k,
         max_iters,
         opq_iters,
-        seed,
         Distance::SquaredEuclidean,
+        seed,
     );
     // For each training vector, quantization should yield a vector of the same dimension.
     for vector in training_data.iter() {
-        let quantized = opq.quantize(vector, Distance::SquaredEuclidean);
+        let quantized = opq.quantize(vector);
         assert_eq!(
             quantized.len(),
             vector.len(),
@@ -52,12 +52,12 @@ fn test_opq_reconstruction_error() {
         k,
         max_iters,
         opq_iters,
-        seed,
         Distance::SquaredEuclidean,
+        seed,
     );
     // For each training vector, quantize and compute total absolute error.
     for vector in training_data.iter() {
-        let quantized = opq.quantize(vector, Distance::SquaredEuclidean);
+        let quantized = opq.quantize(vector);
         let reconstructed: Vec<f32> = quantized.data.iter().map(|&x| f16::to_f32(x)).collect();
         let total_error: f32 = vector
             .data

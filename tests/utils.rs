@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;

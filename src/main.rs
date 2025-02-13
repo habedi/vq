@@ -1,6 +1,9 @@
 #![allow(dead_code)]
+
 use vq::distances::Distance;
+use vq::opq::OptimizedProductQuantizer;
 use vq::pq::ProductQuantizer;
+use vq::rvq::ResidualQuantizer;
 use vq::tsvq::TSVQ;
 use vq::vector::Vector;
 
@@ -34,7 +37,6 @@ fn test_scalar_quantizer(v: Vector<f32>) {
     use vq::sq::ScalarQuantizer;
     let quantizer = ScalarQuantizer::new(-1.0, 1.0, 5);
     let quantized = quantizer.quantize(&v);
-    //println!("Type of output: {:?}", type_name_of_val(&quantized));
     println!("SQ output: {}", quantized);
 }
 
@@ -42,7 +44,6 @@ fn test_binary_quantizer(v: Vector<f32>) {
     use vq::bq::BinaryQuantizer;
     let quantizer = BinaryQuantizer::new(5.0, 0, 1);
     let quantized = quantizer.quantize(&v);
-    //println!("Type of output: {:?}", type_name_of_val(&quantized));
     println!("BQ output: {}", quantized);
 }
 
@@ -52,19 +53,24 @@ fn test_pq(training_data: Vec<Vector<f32>>, test_vector: Vector<f32>) {
     let max_iters = 20;
     let seed = 33;
 
-    let pq = ProductQuantizer::new(&training_data, m, k, max_iters, seed);
+    let pq = ProductQuantizer::new(
+        &training_data,
+        m,
+        k,
+        max_iters,
+        Distance::SquaredEuclidean,
+        seed,
+    );
 
-    let quantized = pq.quantize(&test_vector, Distance::SquaredEuclidean);
-    //println!("Type of output: {:?}", type_name_of_val(&quantized));
+    let quantized = pq.quantize(&test_vector);
     println!("PQ output: {}", quantized);
 }
 
 fn test_tsvq(training_data: Vec<Vector<f32>>, test_vector: Vector<f32>) {
     let max_depth = 3;
-    let tsvq = TSVQ::new(&training_data, max_depth);
+    let tsvq = TSVQ::new(&training_data, max_depth, Distance::SquaredEuclidean);
 
-    let quantized = tsvq.quantize(&test_vector, Distance::SquaredEuclidean);
-    //println!("Type of output: {:?}", type_name_of_val(&quantized));
+    let quantized = tsvq.quantize(&test_vector);
     println!("TSVQ output: {}", quantized);
 }
 
@@ -72,12 +78,20 @@ fn test_opq(training_data: Vec<Vector<f32>>, test_vector: Vector<f32>) {
     let m = 2;
     let k = 2;
     let max_iters = 20;
+    let opq_iters = 5;
     let seed = 43;
 
-    let pq = ProductQuantizer::new(&training_data, m, k, max_iters, seed);
+    let pq = OptimizedProductQuantizer::new(
+        &training_data,
+        m,
+        k,
+        max_iters,
+        opq_iters,
+        Distance::SquaredEuclidean,
+        seed,
+    );
 
-    let quantized = pq.quantize(&test_vector, Distance::SquaredEuclidean);
-    //println!("Type of output: {:?}", type_name_of_val(&quantized));
+    let quantized = pq.quantize(&test_vector);
     println!("OPQ output: {}", quantized);
 }
 
@@ -86,10 +100,18 @@ fn test_rvq(training_data: Vec<Vector<f32>>, test_vector: Vector<f32>) {
     let k = 2;
     let max_iters = 20;
     let seed = 53;
+    let epsilon = 10e-6;
 
-    let pq = ProductQuantizer::new(&training_data, m, k, max_iters, seed);
+    let pq = ResidualQuantizer::new(
+        &training_data,
+        m,
+        k,
+        max_iters,
+        epsilon,
+        Distance::SquaredEuclidean,
+        seed,
+    );
 
-    let quantized = pq.quantize(&test_vector, Distance::SquaredEuclidean);
-    //println!("Type of output: {:?}", type_name_of_val(&quantized));
+    let quantized = pq.quantize(&test_vector);
     println!("RVQ output: {}", quantized);
 }

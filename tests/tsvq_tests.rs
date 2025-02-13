@@ -12,8 +12,8 @@ fn test_tsvq_on_identical_vectors() {
     let training_vector = Vector::new(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
     let training_data = vec![training_vector.clone(); 10];
     let max_depth = 3;
-    let tsvq = TSVQ::new(&training_data, max_depth);
-    let quantized = tsvq.quantize(&training_vector, Distance::SquaredEuclidean);
+    let tsvq = TSVQ::new(&training_data, max_depth, Distance::SquaredEuclidean);
+    let quantized = tsvq.quantize(&training_vector);
     assert_eq!(quantized.len(), training_vector.len());
     let reconstructed: Vec<f32> = quantized.data.iter().map(|&x| f16::to_f32(x)).collect();
     for (orig, recon) in training_vector.data.iter().zip(reconstructed.iter()) {
@@ -26,9 +26,9 @@ fn test_tsvq_on_random_vectors() {
     let mut rng = seeded_rng();
     let training_data = generate_test_data(&mut rng, 1000, 10);
     let max_depth = 3;
-    let tsvq = TSVQ::new(&training_data, max_depth);
+    let tsvq = TSVQ::new(&training_data, max_depth, Distance::SquaredEuclidean);
     for vector in training_data.iter() {
-        let quantized = tsvq.quantize(vector, Distance::SquaredEuclidean);
+        let quantized = tsvq.quantize(vector);
         assert_eq!(quantized.len(), vector.len());
         let reconstructed: Vec<f32> = quantized.data.iter().map(|&x| f16::to_f32(x)).collect();
         let total_error: f32 = vector

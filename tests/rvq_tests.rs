@@ -14,16 +14,18 @@ fn test_rvq_dimension() {
     let k = 2;
     let max_iters = 50;
     let seed = 42;
+    let epsilon = 1e-6;
     let rvq = ResidualQuantizer::new(
         &training_data,
         stages,
         k,
         max_iters,
-        seed,
+        epsilon,
         Distance::SquaredEuclidean,
+        seed,
     );
     for vector in training_data.iter() {
-        let quantized = rvq.quantize(vector, Distance::SquaredEuclidean);
+        let quantized = rvq.quantize(vector);
         assert_eq!(quantized.len(), vector.len());
     }
 }
@@ -36,16 +38,18 @@ fn test_rvq_reconstruction_error() {
     let k = 2;
     let max_iters = 50;
     let seed = 42;
+    let epsilon = 1e-6;
     let rvq = ResidualQuantizer::new(
         &training_data,
         stages,
         k,
         max_iters,
-        seed,
+        epsilon,
         Distance::SquaredEuclidean,
+        seed,
     );
     for vector in training_data.iter() {
-        let quantized = rvq.quantize(vector, Distance::SquaredEuclidean);
+        let quantized = rvq.quantize(vector);
         let reconstructed: Vec<f32> = quantized.data.iter().map(|&x| f16::to_f32(x)).collect();
         let total_error: f32 = vector
             .data

@@ -14,9 +14,16 @@ fn test_pq_on_random_vectors() {
     let k = 2;
     let max_iters = 50;
     let seed = 42;
-    let pq = ProductQuantizer::new(&training_data, m, k, max_iters, seed);
+    let pq = ProductQuantizer::new(
+        &training_data,
+        m,
+        k,
+        max_iters,
+        Distance::SquaredEuclidean,
+        seed,
+    );
     for vector in training_data.iter() {
-        let quantized = pq.quantize(vector, Distance::SquaredEuclidean);
+        let quantized = pq.quantize(vector);
         assert_eq!(
             quantized.len(),
             vector.len(),
