@@ -51,3 +51,7 @@
 *.out filter=lfs diff=lfs merge=lfs -text
 *.a filter=lfs diff=lfs merge=lfs -text
 *.o filter=lfs diff=lfs merge=lfs -text
+
+# Exclude files from language stats (GitHub Linguist)
+*.ipynb linguist-vendored
+

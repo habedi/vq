@@ -47,7 +47,7 @@ impl OptimizedProductQuantizer {
     /// Panics if:
     /// - `training_data` is empty.
     /// - The dimension of the training vectors is less than `m` or not divisible by `m`.
-    pub fn new(
+    pub fn fit(
         training_data: &[Vector<f32>],
         m: usize,
         k: usize,

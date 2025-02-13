@@ -42,7 +42,7 @@ impl ResidualQuantizer {
     /// This function panics if:
     /// - `training_data` is empty.
     /// - The training data vectors are not all of the same dimension.
-    pub fn new(
+    pub fn fit(
         training_data: &[Vector<f32>],
         stages: usize,
         k: usize,

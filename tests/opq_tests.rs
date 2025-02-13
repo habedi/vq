@@ -16,7 +16,7 @@ fn test_opq_dimension() {
     let max_iters = 50;
     let opq_iters = 5;
     let seed = 42;
-    let opq = OptimizedProductQuantizer::new(
+    let opq = OptimizedProductQuantizer::fit(
         &training_data,
         m,
         k,
@@ -46,7 +46,7 @@ fn test_opq_reconstruction_error() {
     let max_iters = 50;
     let opq_iters = 5;
     let seed = 42;
-    let opq = OptimizedProductQuantizer::new(
+    let opq = OptimizedProductQuantizer::fit(
         &training_data,
         m,
         k,

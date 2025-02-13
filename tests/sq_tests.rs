@@ -7,7 +7,7 @@ use vq::vector::Vector;
 
 #[test]
 fn test_scalar_quantizer_on_scalars() {
-    let quantizer = ScalarQuantizer::new(-1.0, 1.0, 5);
+    let quantizer = ScalarQuantizer::fit(-1.0, 1.0, 5);
     let test_values = vec![-1.2, -1.0, -0.8, -0.3, 0.0, 0.3, 0.6, 1.0, 1.2];
     for x in test_values {
         let vec_x = Vector::new(vec![x]);
@@ -38,7 +38,7 @@ fn test_scalar_quantizer_on_large_vectors() {
     let n = 100;
     let dim = 1024;
     let data = generate_test_data(&mut rng, n, dim);
-    let quantizer = ScalarQuantizer::new(-1000.0, 1000.0, 256);
+    let quantizer = ScalarQuantizer::fit(-1000.0, 1000.0, 256);
 
     for vector in data.iter() {
         let indices = quantizer.quantize(vector);

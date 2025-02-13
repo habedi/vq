@@ -1,0 +1,98 @@
+[tool.poetry]
+name = "vq"
+version = "0.1.0"
+description = "A vector quantization library for Rust"
+authors = ["Hassan Abedi <hassan.abedi.t@gmail.com>"]
+maintainers = ["Hassan Abedi <hassan.abedi.t@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/habedi/vq"
+license = "MIT OR Apache-2.0"
+#packages = [{ include = "src", from = "." }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+jupyter = "^1.1.1"
+polars = "^1.22.0"
+seaborn = "^0.13.2"
+
+[tool.poetry.group.dev.dependencies]
+poetry-dynamic-versioning = "^1.4.0"
+pytest = "^8.0.1"
+pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
+mypy = "^1.11.1"
+ruff = "^0.9.3"
+
+#[tool.poetry.scripts]
+#cli_script = "src.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src", 'bin', 'notebooks']
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disallow_untyped_calls = true
+strict_optional = true
+warn_redundant_casts = true
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+versioning = "semver"  # Semantic Versioning
+
+# Ruff configuration
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv"
+]
+line-length = 120
+indent-width = 4
+src = ["src", "tests", "bin", "notebooks"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["ANN", "D", "E", "F", "I"]
+ignore = [
+    # Ignore missing docstrings
+    "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
+]
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = []

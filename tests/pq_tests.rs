@@ -14,7 +14,7 @@ fn test_pq_on_random_vectors() {
     let k = 2;
     let max_iters = 50;
     let seed = 42;
-    let pq = ProductQuantizer::new(
+    let pq = ProductQuantizer::fit(
         &training_data,
         m,
         k,
