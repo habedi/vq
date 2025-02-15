@@ -13,7 +13,7 @@
 
 Vq (**v**[ector] **q**[uantizer]) is a Rust library that implements several
 popular [vector quantization](https://en.wikipedia.org/wiki/Vector_quantization) algorithms including binary, scalar,
-and product quantization algorithms.
+and product quantization.
 It provides a simple, efficient API for data compression that helps reduce memory usage and computational overhead.
 
 ## Features
@@ -28,7 +28,7 @@ It provides a simple, efficient API for data compression that helps reduce memor
 
 - Parallelized vector operations for large vectors using [Rayon](https://crates.io/crates/rayon).
 - Flexible quantization algorithm implementations that support using various distance metrics such as Euclidean, Cosine,
-  Manhattan distances.
+  and Manhattan distances.
 - Support for quantizing vectors of `f32` to `f16` (using [half](https://crates.io/crates/half)) or `u8` data types.
 - Simple, intuitive, and uniform API for all quantization algorithms.
 
