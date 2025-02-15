@@ -78,7 +78,7 @@ Additionally, see the content of [src/bin](src/bin/) directory for the scripts u
 > quantizing one million vectors of 128 dimensions (into 16 subspaces with 256 centroids per subspace) is as follows:
 >   - Training Time: 232.5 seconds
 >   - Quantization Time: 34.1 seconds
->   - Reconstruction Error: 0.02
+>   - Reconstruction Error (MSE): 0.02
 >   - Recall@10: 0.19
 
 ## Contributing
