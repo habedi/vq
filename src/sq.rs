@@ -1,22 +1,31 @@
-use crate::vector::Vector;
+//! # Scalar Quantizer Implementation
+//!
+//! This module provides a scalar quantizer that maps floating-point values to a set of discrete values (or levels).
+//! The quantizer is configured with a minimum and maximum value and a specified number of levels.
+//! Each input value is first clamped to the `[min, max]` range and then uniformly quantized into one of the levels.
+//! The quantized result is represented as a `u8`. For large input vectors, parallel processing is used
+//! to improve performance.
+//!
+//! Custom error handling is integrated to validate parameters. For example, the `fit` method will panic
+//! with a custom error if the parameters are invalid (e.g. `max` is not greater than `min`, or if the number of levels
+//! is not between 2 and 256).
+//!
+//! # Example
+//! ```
+//! use vq::vector::Vector;
+//! use vq::sq::ScalarQuantizer;
+//!
+//! let quantizer = ScalarQuantizer::fit(0.0, 1.0, 256);
+//! let input = Vector::new(vec![0.0, 0.5, 1.0]);
+//! let output = quantizer.quantize(&input);
+//! // output is a Vector<u8> with quantized values.
+//! ```
+
+use crate::exceptions::VqError;
+use crate::vector::{Vector, PARALLEL_THRESHOLD};
 use rayon::prelude::*;
 
-/// A scalar quantizer that maps floating-point values to a set of discrete values (levels).
-///
-/// The quantizer is configured with a minimum and maximum value and a specified number of levels.
-/// Each input value is clamped between `min` and `max`, then quantized uniformly into one of the levels.
-/// The resulting quantized value is represented as a `u8`. For large input vectors, parallel processing
-/// is used to speed up quantization.
-///
-/// # Example
-/// ```
-/// # use vq::vector::Vector;
-/// # use vq::sq::ScalarQuantizer;
-/// let quantizer = ScalarQuantizer::fit(0.0, 1.0, 256);
-/// let input = Vector::new(vec![0.1, 0.5, 0.9]);
-/// let output = quantizer.quantize(&input);
-/// // output now contains quantized values for each input element.
-/// ```
+/// A scalar quantizer that maps floating-point values to a set of discrete levels (levels).
 pub struct ScalarQuantizer {
     /// The minimum value in the quantizer range.
     pub min: f32,
@@ -37,11 +46,26 @@ impl ScalarQuantizer {
     /// - `levels`: The number of quantization levels. Must be between 2 and 256.
     ///
     /// # Panics
-    /// Panics if `max` is not greater than `min`, or if `levels` is not within the valid range.
+    /// Panics with a custom error if `max` is not greater than `min`, or if `levels` is not within the valid range.
     pub fn fit(min: f32, max: f32, levels: usize) -> Self {
-        assert!(max > min, "max must be greater than min");
-        assert!(levels >= 2, "levels must be at least 2");
-        assert!(levels <= 256, "levels must be no more than 256");
+        if max <= min {
+            panic!(
+                "{}",
+                VqError::InvalidParameter("max must be greater than min".to_string())
+            );
+        }
+        if levels < 2 {
+            panic!(
+                "{}",
+                VqError::InvalidParameter("levels must be at least 2".to_string())
+            );
+        }
+        if levels > 256 {
+            panic!(
+                "{}",
+                VqError::InvalidParameter("levels must be no more than 256".to_string())
+            );
+        }
         let step = (max - min) / (levels - 1) as f32;
         Self {
             min,
@@ -53,7 +77,7 @@ impl ScalarQuantizer {
 
     /// Quantizes an input vector by mapping each element to one of the discrete levels.
     ///
-    /// Each element is first clamped to the `[min, max]` range and then mapped to the nearest
+    /// Each element is clamped to the `[min, max]` range and then mapped to the nearest
     /// quantization level using uniform quantization. If the input vector's length exceeds
     /// `PARALLEL_THRESHOLD`, parallel iteration is used to improve performance.
     ///
@@ -62,20 +86,7 @@ impl ScalarQuantizer {
     ///
     /// # Returns
     /// A new vector (`Vector<u8>`) containing the quantized values.
-    ///
-    /// # Example
-    /// ```
-    /// # use vq::vector::Vector;
-    /// # use vq::sq::ScalarQuantizer;
-    /// let quantizer = ScalarQuantizer::fit(0.0, 1.0, 256);
-    /// let input = Vector::new(vec![0.0, 0.5, 1.0]);
-    /// let output = quantizer.quantize(&input);
-    /// // output is a Vector<u8> with quantized values.
-    /// ```
     pub fn quantize(&self, vector: &Vector<f32>) -> Vector<u8> {
-        // Define a threshold to decide when to use parallel processing.
-        const PARALLEL_THRESHOLD: usize = 1024;
-
         let quantized_vector: Vec<u8> = if vector.data.len() > PARALLEL_THRESHOLD {
             // Use parallel iteration for large vectors.
             vector

@@ -1,12 +1,12 @@
-# Performance Evaluation
+## Performance Evaluation
 
 This directory contains the Jupyter notebooks used to evaluate the performance of the implemented algorithms.
 
-## Setup Python Environment
+### Setup Python Environment
 
 ```bash
-# Install poetry
-pip install poetry # or uv tool install poetry
+# Install Poetry
+pip install poetry
 ```
 
 ```bash
@@ -19,7 +19,7 @@ poetry install --no-root
 poetry run jupyter notebook
 ```
 
-## Generate Experiment Data
+### Generate Experiment Data
 
 ```bash
 # Run all experiments and store results in the `data` directory
@@ -28,7 +28,7 @@ make eval-all
 
 Check the [../src/bin/utils.rs](../src/bin/utils.rs) for the parameters used in the experiments.
 
-## Evaluation Metrics
+### Evaluation Metrics
 
 The performance of each implementation is measured using a few metrics that capture both efficiency and quality.
 These metrics include:
@@ -49,10 +49,10 @@ These metrics include:
   determined by Euclidean distance.
   A higher recall means better preservation of neighborhood relationships.
 
-Additionally, the dataset is created using a uniform random distribution over the interval \([0.0, 1.0]\) with a fixed
+Additionally, the dataset is created using a uniform random distribution over the interval [0.0, 1.0] with a fixed
 seed for reproducibility.
 
-### Example CSV Output
+#### Example CSV Output
 
 ```csv
 n_samples,n_dims,training_time_ms,quantization_time_ms,reconstruction_error,recall
@@ -61,7 +61,7 @@ n_samples,n_dims,training_time_ms,quantization_time_ms,reconstruction_error,reca
 ...
 ```
 
-### Acknowledgements
+#### Acknowledgements
 
 The evaluation framework is inspired by the code from
 [here](https://github.com/oramasearch/vector_quantizer/blob/main/src/bin/quality_check.rs).

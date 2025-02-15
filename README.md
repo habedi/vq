@@ -1,22 +1,21 @@
-# Vq
+## Vq
 
-[<img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/habedi/vq/tests.yml?label=Tests&style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/habedi/vq/actions/workflows/tests.yml)
-[<img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/habedi/vq?style=for-the-badge&labelColor=555555&logo=codecov" height="20">](https://codecov.io/gh/habedi/vq)
-[<img alt="CodeFactor" src="https://img.shields.io/codefactor/grade/github/habedi/vq?style=for-the-badge&labelColor=555555&logo=codefactor" height="20">](https://www.codefactor.io/repository/github/habedi/vq)
-[<img alt="Crates.io" src="https://img.shields.io/crates/v/vq.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/vq)
-[<img alt="Docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/vq)
-[<img alt="Downloads" src="https://img.shields.io/crates/d/vq?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://crates.io/crates/vq)
-[<img alt="MSRV" src="https://img.shields.io/badge/MSRV-1.83.0-orange?style=for-the-badge&labelColor=555555&logo=rust" height="20">](https://github.com/rust-lang/rust/releases/tag/1.83.0)
-<br>
-[<img alt="Docs" src="https://img.shields.io/badge/docs-latest-3776ab?style=for-the-badge&labelColor=555555&logo=readthedocs" height="20">](docs)
-[<img alt="License" src="https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?style=for-the-badge&labelColor=555555&logo=open-source-initiative" height="20">](https://github.com/habedi/vq)
+[<img alt="tests" src="https://img.shields.io/github/actions/workflow/status/habedi/vq/tests.yml?label=tests&style=flat&labelColor=555555&logo=github" height="20">](https://github.com/habedi/vq/actions/workflows/tests.yml)
+[<img alt="lints" src="https://img.shields.io/github/actions/workflow/status/habedi/vq/lints.yml?label=lints&style=flat&labelColor=555555&logo=github" height="20">](https://github.com/habedi/vq/actions/workflows/lints.yml)
+[<img alt="code coverage" src="https://img.shields.io/codecov/c/github/habedi/vq?style=flat&labelColor=555555&logo=codecov" height="20">](https://codecov.io/gh/habedi/vq)
+[<img alt="codefactor" src="https://img.shields.io/codefactor/grade/github/habedi/vq?style=flat&labelColor=555555&logo=codefactor" height="20">](https://www.codefactor.io/repository/github/habedi/vq)
+[<img alt="crates.io" src="https://img.shields.io/crates/v/vq.svg?label=crates.io&style=flat&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/vq)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?label=docs.rs&style=flat&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/vq)
+[<img alt="downloads" src="https://img.shields.io/crates/d/vq?label=downloads&style=flat&labelColor=555555&logo=rust" height="20">](https://crates.io/crates/vq)
+[<img alt="msrv" src="https://img.shields.io/badge/msrv-1.83.0-orange?label=msrv&style=flat&labelColor=555555&logo=rust" height="20">](https://github.com/rust-lang/rust/releases/tag/1.83.0)
+[<img alt="license" src="https://img.shields.io/badge/license-mit%2Fapache--2.0-007ec6?label=license&style=flat&labelColor=555555&logo=open-source-initiative" height="20">](https://github.com/habedi/vq)
 
 Vq (**v**[ector] **q**[uantizer]) is a Rust library that implements several
 popular [vector quantization](https://en.wikipedia.org/wiki/Vector_quantization) algorithms including binary, scalar,
-and product quantization algorithms.
+and product quantization.
 It provides a simple, efficient API for data compression that helps reduce memory usage and computational overhead.
 
-## Features
+### Features
 
 - Implemented Algorithms:
     - [Binary Quantization (BQ)](src/bq.rs)
@@ -28,11 +27,11 @@ It provides a simple, efficient API for data compression that helps reduce memor
 
 - Parallelized vector operations for large vectors using [Rayon](https://crates.io/crates/rayon).
 - Flexible quantization algorithm implementations that support using various distance metrics such as Euclidean, Cosine,
-  Manhattan distances.
+  and Manhattan distances.
 - Support for quantizing vectors of `f32` to `f16` (using [half](https://crates.io/crates/half)) or `u8` data types.
 - Simple, intuitive, and uniform API for all quantization algorithms.
 
-## Installation
+### Installation
 
 ```bash
 cargo add vq
@@ -40,13 +39,13 @@ cargo add vq
 
 *Vq requires Rust 1.83 or later.*
 
-## Documentation
+### Documentation
 
-Find the latest documentation on [docs.rs](https://docs.rs/vq).
+Find the latest API documentation on [docs.rs](https://docs.rs/vq).
 
-Check out [vq_examples.rs](src/bin/vq_examples.rs) the [tests](tests/) directory for detailed examples of using Vq.
+Check out [vq_examples.rs](src/bin/vq_examples.rs) the [tests](tests) directory for detailed examples of using Vq.
 
-### Quick Example
+#### Quick Example
 
 Here's a simple example using the SQ algorithm to quantize a vector:
 
@@ -68,7 +67,7 @@ fn main() {
 }
 ```
 
-## Performance
+### Performance
 
 Check out the [notebooks](notebooks/) directory for information on how to evaluate the performance of the implemented
 algorithms.
@@ -78,14 +77,14 @@ Additionally, see the content of [src/bin](src/bin/) directory for the scripts u
 > quantizing one million vectors of 128 dimensions (into 16 subspaces with 256 centroids per subspace) is as follows:
 >   - Training Time: 232.5 seconds
 >   - Quantization Time: 34.1 seconds
->   - Reconstruction Error: 0.02
+>   - Reconstruction Error (MSE): 0.02
 >   - Recall@10: 0.19
 
-## Contributing
+### Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing.
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute.
 
-## License
+### License
 
 Vq is available under the terms of either of the following licenses:
 

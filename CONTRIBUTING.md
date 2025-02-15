@@ -1,6 +1,6 @@
 # Contribution Guidelines
 
-Thank you for considering contributing to the project!
+Thank you for considering contributing to this project!
 Contributions are always welcome and appreciated.
 
 ## How to Contribute
