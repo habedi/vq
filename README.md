@@ -83,7 +83,7 @@ Additionally, see the content of [src/bin](src/bin/) directory for the scripts u
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute.
 
 ## License
 
