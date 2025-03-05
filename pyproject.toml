@@ -1,37 +1,32 @@
 [tool.poetry]
 name = "vq"
 version = "0.1.0"
-description = "A vector quantization library for Rust"
+description = "Python environment for Vq"
 authors = ["Hassan Abedi <hassan.abedi.t@gmail.com>"]
 maintainers = ["Hassan Abedi <hassan.abedi.t@gmail.com>"]
 readme = "README.md"
 repository = "https://github.com/habedi/vq"
 license = "MIT OR Apache-2.0"
-#packages = [{ include = "src", from = "." }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-jupyter = "^1.1.1"
-polars = "^1.22.0"
-seaborn = "^0.13.2"
-
-[tool.poetry.group.dev.dependencies]
 poetry-dynamic-versioning = "^1.4.0"
 pytest = "^8.0.1"
 pytest-cov = "^6.0.0"
 pytest-mock = "^3.14.0"
 mypy = "^1.11.1"
-ruff = "^0.9.3"
-
-#[tool.poetry.scripts]
-#cli_script = "src.cli:main"
+ruff = "^0.9.9"
+jupyter = "^1.1.1"
+polars = "^1.22.0"
+seaborn = "^0.13.2"
+notebook = "^7.3.2"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = [".", "src", 'bin', 'notebooks']
+pythonpath = [".", "notebooks"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -70,9 +65,9 @@ exclude = [
     "node_modules",
     "venv"
 ]
-line-length = 120
+line-length = 100
 indent-width = 4
-src = ["src", "tests", "bin", "notebooks"]
+src = ["tests", "benches", "examples", "scripts", "notebooks"]
 target-version = "py311"
 
 [tool.ruff.lint]

@@ -1,12 +1,21 @@
+//! # Vector Representation and Operations
+//!
+//! This module defines a `Vector` type and operations for real numbers. It includes basic
+//! arithmetic (addition, subtraction, scalar multiplication), dot product, norm, and a function
+//! to compute the mean vector from a slice of vectors. When the input size exceeds a threshold,
+//! Rayon is used to perform operations in parallel for better performance.
+
 use half::{bf16, f16};
 use rayon::prelude::*;
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
+use crate::exceptions::VqError;
+
 /// Size threshold for enabling parallel computation.
 pub const PARALLEL_THRESHOLD: usize = 1024;
 
-/// Abstraction for real numbers.
+/// Trait for basic operations on real numbers.
 pub trait Real:
     Copy
     + PartialOrd
@@ -143,6 +152,7 @@ pub struct Vector<T: Real> {
 }
 
 impl<T: Real> Vector<T> {
+    /// Create a new vector from a `Vec<T>`.
     pub fn new(data: Vec<T>) -> Self {
         Self { data }
     }
@@ -152,7 +162,7 @@ impl<T: Real> Vector<T> {
         self.data.len()
     }
 
-    // Returns true if the vector is empty.
+    /// Returns true if the vector is empty.
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
@@ -162,17 +172,22 @@ impl<T: Real> Vector<T> {
         &self.data
     }
 
-    /// Compute the dot product between two vectors.
+    /// Compute the dot product with another vector.
     ///
-    /// If the length is larger than `THRESHOLD`, the dot product is computed in parallel.
-    /// Otherwise, it falls back to a sequential implementation.
-    ///
-    /// (This method requires that `T` implements `Send + Sync` so that parallel iteration is safe.)
+    /// If the vector length exceeds `PARALLEL_THRESHOLD`, this is computed in parallel.
     pub fn dot(&self, other: &Vector<T>) -> T
     where
         T: Send + Sync,
     {
-        assert_eq!(self.len(), other.len(), "Vectors must be same length");
+        if self.len() != other.len() {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: self.len(),
+                    found: other.len()
+                }
+            );
+        }
         if self.len() > PARALLEL_THRESHOLD {
             self.data
                 .par_iter()
@@ -209,7 +224,15 @@ impl<T: Real> Vector<T> {
 impl<'b, T: Real> Add<&'b Vector<T>> for &Vector<T> {
     type Output = Vector<T>;
     fn add(self, rhs: &'b Vector<T>) -> Vector<T> {
-        assert_eq!(self.len(), rhs.len(), "Vectors must be same length");
+        if self.len() != rhs.len() {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: self.len(),
+                    found: rhs.len()
+                }
+            );
+        }
         let data = self
             .data
             .iter()
@@ -224,7 +247,15 @@ impl<'b, T: Real> Add<&'b Vector<T>> for &Vector<T> {
 impl<'b, T: Real> Sub<&'b Vector<T>> for &Vector<T> {
     type Output = Vector<T>;
     fn sub(self, rhs: &'b Vector<T>) -> Vector<T> {
-        assert_eq!(self.len(), rhs.len(), "Vectors must be same length");
+        if self.len() != rhs.len() {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: self.len(),
+                    found: rhs.len()
+                }
+            );
+        }
         let data = self
             .data
             .iter()
@@ -245,17 +276,27 @@ impl<T: Real> Mul<T> for &Vector<T> {
 }
 
 /// Compute the mean vector from a slice of vectors.
-/// If there are more than `THRESHOLD` vectors, the summation is performed in parallel.
-/// Assumes that all vectors have the same dimension.
+///
+/// All vectors must have the same dimension. For many vectors (more than `PARALLEL_THRESHOLD`),
+/// the summation is done in parallel.
 pub fn mean_vector<T: Real + Send + Sync>(vectors: &[Vector<T>]) -> Vector<T> {
-    assert!(!vectors.is_empty(), "Cannot compute mean of empty slice");
+    if vectors.is_empty() {
+        panic!("{}", VqError::EmptyInput);
+    }
     let dim = vectors[0].len();
     for v in vectors {
-        assert_eq!(v.len(), dim, "All vectors must have the same dimension");
+        if v.len() != dim {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: dim,
+                    found: v.len()
+                }
+            );
+        }
     }
     let sum: Vec<T> = if vectors.len() > PARALLEL_THRESHOLD {
-        // Parallel reduction over the vectors.
-        // We first reduce the slice of vectors into one "sum" vector.
+        // Parallel reduction: sum all vectors into one.
         let summed = vectors
             .par_iter()
             .cloned()
@@ -264,8 +305,9 @@ pub fn mean_vector<T: Real + Send + Sync>(vectors: &[Vector<T>]) -> Vector<T> {
     } else {
         let mut sum = vec![T::zero(); dim];
         for v in vectors {
-            for i in 0..dim {
-                sum[i] = sum[i] + v.data[i];
+            // Replace explicit index loop with zip iterator.
+            for (s, &value) in sum.iter_mut().zip(v.data.iter()) {
+                *s = *s + value;
             }
         }
         sum
@@ -275,7 +317,7 @@ pub fn mean_vector<T: Real + Send + Sync>(vectors: &[Vector<T>]) -> Vector<T> {
     Vector::new(mean_data)
 }
 
-/// Custom Display implementation for Vector<T>.
+/// Custom display for vectors.
 impl<T: Real + fmt::Display> fmt::Display for Vector<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Vector [")?;

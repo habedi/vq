@@ -4,8 +4,6 @@ mod utils;
 use vq::distances::Distance;
 use vq::vector::PARALLEL_THRESHOLD;
 
-// We'll test using f32 as our Real type.
-
 // A helper function to compare two floating point numbers within a given tolerance.
 fn approx_eq(a: f32, b: f32, eps: f32) -> bool {
     (a - b).abs() < eps
@@ -206,7 +204,7 @@ fn test_hamming_parallel() {
 // Mismatched Lengths
 // ----------------------------
 #[test]
-#[should_panic(expected = "Input slices must have the same length")]
+#[should_panic(expected = "Dimension mismatch")]
 fn test_compute_mismatched_lengths() {
     let a = vec![1.0f32, 2.0];
     let b = vec![1.0f32];

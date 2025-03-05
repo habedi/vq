@@ -3,11 +3,9 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
 use tracing::{info, span, Level};
-use tracing_subscriber;
 
 use vq::distances::Distance;
 use vq::tsvq::TSVQ;
-// Assumes your TSVQ implementation is in the vq::tsvq module
 use vq::vector::Vector;
 
 // Import the helper functions and BenchmarkResult from utils.
@@ -19,6 +17,7 @@ use utils::{
 use utils::{DIM, NUM_SAMPLES, SEED};
 
 const OUTPUT_FILENAME: &str = "notebooks/data/eval_tsvq_results.csv";
+
 // For TSVQ, we define a maximum tree depth for recursive splitting.
 const MAX_DEPTH: usize = 10;
 

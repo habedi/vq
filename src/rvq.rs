@@ -1,17 +1,59 @@
+//! # Residual Quantizer Implementation
+//!
+//! This module implements a residual quantizer that approximates an input vector as a sum of
+//! quantized codewords. The quantizer is trained in multiple stages using the Linde–Buzo–Gray (LBG)
+//! algorithm. At each stage, a codebook is learned to quantize the residual (error) left by previous
+//! stages. The final quantized approximation is the sum of the selected codewords from each stage.
+//!
+//! The quantizer uses a specified distance metric to compare vectors and supports early termination
+//! if the average residual norm falls below a given threshold during training.
+//!
+//! # Errors
+//! Methods in this module panic with custom errors from the exceptions module when:
+//! - The training data is empty.
+//! - The training vectors are not all of the same dimension.
+//! - An input vector passed to `quantize` does not have the expected dimension.
+//!
+//! # Example
+//! ```
+//! use vq::vector::Vector;
+//! use vq::distances::Distance;
+//! use vq::rvq::ResidualQuantizer;
+//! use half::f16;
+//!
+//! // Create a small training dataset. Each vector has dimension 3.
+//! // Provide at least 4 training vectors so that k (number of centroids per stage) is valid.
+//! let training_data = vec![
+//!     Vector::new(vec![0.0, 0.0, 0.0]),
+//!     Vector::new(vec![1.0, 1.0, 1.0]),
+//!     Vector::new(vec![0.5, 0.5, 0.5]),
+//!     Vector::new(vec![0.2, 0.2, 0.2]),
+//! ];
+//!
+//! // Configure the residual quantizer.
+//! let stages = 3;
+//! let k = 4; // number of centroids per stage
+//! let max_iters = 10;
+//! let epsilon = 0.01;
+//! let distance = Distance::Euclidean;
+//! let seed = 42;
+//!
+//! // Fit the residual quantizer.
+//! let rq = ResidualQuantizer::fit(&training_data, stages, k, max_iters, epsilon, distance, seed);
+//!
+//! // Quantize an input vector (dimension must match training data, i.e. 3).
+//! let input = Vector::new(vec![0.2, 0.8, 0.3]);
+//! let quantized = rq.quantize(&input);
+//! println!("Quantized vector: {:?}", quantized);
+//! ```
+
 use crate::distances::Distance;
+use crate::exceptions::VqError;
 use crate::utils::lbg_quantize;
 use crate::vector::Vector;
 use half::f16;
 use rayon::prelude::*;
 
-/// A residual quantizer that approximates an input vector as a sum of quantized codewords.
-///
-/// The quantizer is trained in multiple stages using the Linde–Buzo–Gray (LBG) algorithm.
-/// In each stage, it learns a codebook to quantize the residual (error) left by the previous stages.
-/// The final quantized approximation is the sum of the codewords selected from each stage.
-///
-/// The distance metric used for comparing vectors and the early termination threshold (epsilon)
-/// are specified at construction time and used during both training and quantization.
 pub struct ResidualQuantizer {
     /// Maximum number of quantization stages.
     stages: usize,
@@ -21,7 +63,7 @@ pub struct ResidualQuantizer {
     dim: usize,
     /// Distance metric used to evaluate the quality of a quantization.
     distance: Distance,
-    /// Early termination threshold: if the residual norm falls below this value, training (or quantization) stops.
+    /// Early termination threshold: if the residual norm falls below this value, training stops.
     epsilon: f32,
 }
 
@@ -39,7 +81,7 @@ impl ResidualQuantizer {
     /// - `seed`: The random seed used for initializing the LBG algorithm (each stage uses `seed + stage`).
     ///
     /// # Panics
-    /// This function panics if:
+    /// Panics with a custom error if:
     /// - `training_data` is empty.
     /// - The training data vectors are not all of the same dimension.
     pub fn fit(
@@ -47,12 +89,15 @@ impl ResidualQuantizer {
         stages: usize,
         k: usize,
         max_iters: usize,
-        epsilon: f32, // early termination threshold
+        epsilon: f32,
         distance: Distance,
         seed: u64,
     ) -> Self {
-        assert!(!training_data.is_empty(), "Training data cannot be empty");
+        if training_data.is_empty() {
+            panic!("{}", VqError::EmptyInput);
+        }
         let dim = training_data[0].len();
+        // (Optionally, you could check that all training vectors have the same dimension here)
         let mut codebooks = Vec::with_capacity(stages);
         // Clone training data into residuals. Initially, each residual equals the original vector.
         let mut residuals = training_data.to_vec();
@@ -64,16 +109,21 @@ impl ResidualQuantizer {
 
             // Update residuals in parallel by subtracting the best matching centroid from each residual.
             residuals.par_iter_mut().for_each(|res| {
-                let mut best_index = 0;
-                let mut best_dist = distance.compute(&res.data, &codebooks[stage][0].data);
-                for (j, centroid) in codebooks[stage].iter().enumerate().skip(1) {
-                    let dist = distance.compute(&res.data, &centroid.data);
-                    if dist < best_dist {
-                        best_dist = dist;
-                        best_index = j;
+                let codebook = &codebooks[stage];
+                let best_index = if codebook.len() < 2 {
+                    0
+                } else {
+                    let mut best_index = 0;
+                    let mut best_dist = distance.compute(&res.data, &codebook[0].data);
+                    for (j, centroid) in codebook.iter().enumerate().skip(1) {
+                        let dist = distance.compute(&res.data, &centroid.data);
+                        if dist < best_dist {
+                            best_dist = dist;
+                            best_index = j;
+                        }
                     }
-                }
-                // Subtract the chosen centroid from the residual.
+                    best_index
+                };
                 *res = &*res - &codebooks[stage][best_index];
             });
 
@@ -91,8 +141,11 @@ impl ResidualQuantizer {
             }
         }
 
+        // Use the actual number of stages performed (codebooks generated)
+        let actual_stages = codebooks.len();
+
         Self {
-            stages,
+            stages: actual_stages,
             codebooks,
             dim,
             distance,
@@ -108,29 +161,42 @@ impl ResidualQuantizer {
     /// Early termination occurs if the residual norm falls below the stored `epsilon`.
     ///
     /// # Parameters
-    /// - `vector`: The input vector (`Vector<f32>`) to quantize. Its dimension must match the training data.
+    /// - `vector`: The input vector (`Vector<f32>`) to quantize. Its dimension must equal the training data.
     ///
     /// # Returns
     /// A quantized vector of type `Vector<f16>` that approximates the input vector.
     ///
     /// # Panics
-    /// Panics if the input vector's dimension does not equal the expected dimension.
+    /// Panics with a custom error if the input vector's dimension does not equal the expected dimension.
     pub fn quantize(&self, vector: &Vector<f32>) -> Vector<f16> {
-        assert_eq!(vector.len(), self.dim, "Input vector has wrong dimension");
+        if vector.len() != self.dim {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: self.dim,
+                    found: vector.len()
+                }
+            );
+        }
         let mut residual = vector.clone();
         let mut quantized_sum = Vector::new(vec![0.0; self.dim]);
 
         for stage in 0..self.stages {
             let codebook = &self.codebooks[stage];
-            let mut best_index = 0;
-            let mut best_dist = self.distance.compute(&residual.data, &codebook[0].data);
-            for (j, centroid) in codebook.iter().enumerate().skip(1) {
-                let dist = self.distance.compute(&residual.data, &centroid.data);
-                if dist < best_dist {
-                    best_dist = dist;
-                    best_index = j;
+            let best_index = if codebook.len() < 2 {
+                0
+            } else {
+                let mut best_index = 0;
+                let mut best_dist = self.distance.compute(&residual.data, &codebook[0].data);
+                for (j, centroid) in codebook.iter().enumerate().skip(1) {
+                    let dist = self.distance.compute(&residual.data, &centroid.data);
+                    if dist < best_dist {
+                        best_dist = dist;
+                        best_index = j;
+                    }
                 }
-            }
+                best_index
+            };
             let chosen = &codebook[best_index];
             quantized_sum = &quantized_sum + chosen;
             residual = &residual - chosen;

@@ -1,12 +1,12 @@
 # Variables
-PKG = github.com/habedi/vq
-BINARY_NAME = $(or $(PROJ_BINARY), $(notdir $(PKG)-examples))
-BINARY = $(BINARY_NAME)
+REPO_URL := github.com/habedi/vq
+BINARY_NAME := $(or $(PROJ_BINARY), $(notdir $(REPO_URL)-examples))
+BINARY := $(BINARY_NAME)
 PATH := /snap/bin:$(PATH)
-CARGO_TERM_COLOR = always
-RUST_BACKTRACE = 1
-RUST_LOG = info
-DEBUG_VQ = 0
+CARGO_TERM_COLOR := always
+RUST_BACKTRACE := 0
+RUST_LOG := info
+DEBUG_VQ := 0
 
 # Default target
 .DEFAULT_GOAL := help
@@ -21,9 +21,9 @@ format: ## Format Rust files
 	@cargo fmt
 
 .PHONY: test
-test: format ## Run tests
+test: format ## Run the tests
 	@echo "Running tests..."
-	@DEBUG_VQ=$(DEBUG_VQ) cargo test -- --nocapture
+	@DEBUG_VQ=$(DEBUG_VQ) RUST_BACKTRACE=$(RUST_BACKTRACE) cargo test -- --nocapture
 
 .PHONY: coverage
 coverage: format ## Generate test coverage report
@@ -63,17 +63,17 @@ install-deps: install-snap ## Install development dependencies
 	@cargo install cargo-audit
 
 .PHONY: lint
-lint: format ## Run linters on Rust files
+lint: format ## Run the linters
 	@echo "Linting Rust files..."
 	@DEBUG_VQ=$(DEBUG_VQ) cargo clippy -- -D warnings
 
 .PHONY: publish
-publish: ## Publish the package to crates.io (requires CARGO_REGISTRY_TOKEN to be set)
+publish: ## Publish the package to crates.io (needs CARGO_REGISTRY_TOKEN to be set)
 	@echo "Publishing the package to Cargo registry..."
 	@cargo publish --token $(CARGO_REGISTRY_TOKEN)
 
 .PHONY: bench
-bench: ## Run benchmarks
+bench: ## Run the benchmarks
 	@echo "Running benchmarks..."
 	@DEBUG_VQ=$(DEBUG_VQ) cargo bench
 

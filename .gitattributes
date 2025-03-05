@@ -1,11 +1,6 @@
 # Normalize all text files to LF line endings
 * text=auto eol=lf
 
-# Go source files
-*.go text
-*.mod text
-*.sum text
-
 # Markdown and documentation files
 *.md text
 *.rst text

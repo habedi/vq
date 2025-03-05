@@ -1,20 +1,59 @@
+//! # Optimized Product Quantizer Implementation
+//!
+//! This module implements an Optimized Product Quantizer (OPQ) that first learns an optimal
+//! rotation of the input data before performing product quantization. The OPQ algorithm reduces
+//! quantization error by rotating the data, partitioning the rotated data into `m` subspaces,
+//! and learning a separate codebook for each subspace via the LBG algorithm. During quantization,
+//! the input vector is rotated and each sub-vector is quantized by selecting the nearest centroid
+//! (using a specified distance metric). The final quantized representation is obtained by concatenating
+//! the selected codewords and converting them to half-precision (`f16`).
+//!
+//! # Errors
+//! The `fit` and `quantize` methods panic with custom errors from the exceptions module when:
+//! - The training data is empty.
+//! - The dimension of the training vectors is less than `m` or not divisible by `m`.
+//! - The input vector's dimension in `quantize` does not match the expected dimension.
+//!
+//! # Example
+//! ```
+//! use vq::vector::Vector;
+//! use vq::distances::Distance;
+//! use vq::opq::OptimizedProductQuantizer;
+//! use nalgebra::DMatrix;
+//!
+//! // Create a small training dataset. Each vector has dimension 4.
+//! let training_data = vec![
+//!     Vector::new(vec![0.0, 0.0, 0.0, 0.0]),
+//!     Vector::new(vec![1.0, 1.0, 1.0, 1.0]),
+//!     Vector::new(vec![0.5, 0.5, 0.5, 0.5]),
+//! ];
+//!
+//! // Partition the 4-dimensional vectors into m = 2 subspaces (each of dimension 2).
+//! let m = 2;
+//! // Use k = 2 centroids per subspace (training data length 3 is sufficient for k = 2).
+//! let k = 2;
+//! let max_iters = 10;
+//! let opq_iters = 5;
+//! let seed = 42;
+//! let distance = Distance::Euclidean;
+//!
+//! // Fit the optimized product quantizer with the training data.
+//! let opq = OptimizedProductQuantizer::fit(&training_data, m, k, max_iters, opq_iters, distance, seed);
+//!
+//! // Quantize an input vector (dimension must equal 4).
+//! let input = Vector::new(vec![0.2, 0.8, 0.3, 0.7]);
+//! let quantized = opq.quantize(&input);
+//! println!("Quantized vector: {:?}", quantized);
+//! ```
+
 use crate::distances::Distance;
+use crate::exceptions::VqError;
 use crate::utils::lbg_quantize;
 use crate::vector::Vector;
 use half::f16;
 use nalgebra::DMatrix;
 use rayon::prelude::*;
 
-/// An Optimized Product Quantizer (OPQ) that applies an optimal rotation
-/// to the input data before performing product quantization.
-///
-/// The OPQ algorithm aims to reduce quantization error by first learning an optimal
-/// rotation of the data, then partitioning the rotated data into `m` subspaces.
-/// For each subspace, a codebook is learned (via the LBG algorithm) to quantize that subspace.
-/// During quantization, the input vector is rotated and each subvector is quantized
-/// by selecting the nearest codeword (using the stored distance metric).
-/// The final quantized representation is the concatenation of the quantized subvectors,
-/// converted to half-precision (`f16`).
 pub struct OptimizedProductQuantizer {
     /// The learned rotation matrix (of size `dim x dim`).
     rotation: DMatrix<f32>,
@@ -44,9 +83,10 @@ impl OptimizedProductQuantizer {
     /// - `seed`: A random seed for initializing LBG quantization (each subspace uses `seed + i`).
     ///
     /// # Panics
-    /// Panics if:
+    /// Panics with a custom error if:
     /// - `training_data` is empty.
-    /// - The dimension of the training vectors is less than `m` or not divisible by `m`.
+    /// - The dimension of the training vectors is less than `m`.
+    /// - The dimension of the training vectors is not divisible by `m`.
     pub fn fit(
         training_data: &[Vector<f32>],
         m: usize,
@@ -56,10 +96,22 @@ impl OptimizedProductQuantizer {
         distance: Distance,
         seed: u64,
     ) -> Self {
-        assert!(!training_data.is_empty());
+        if training_data.is_empty() {
+            panic!("{}", VqError::EmptyInput);
+        }
         let dim = training_data[0].len();
-        assert!(dim >= m, "Dimension must be at least m");
-        assert_eq!(dim % m, 0, "Dimension must be divisible by m");
+        if dim < m {
+            panic!(
+                "{}",
+                VqError::InvalidParameter("Dimension must be at least m".to_string())
+            );
+        }
+        if dim % m != 0 {
+            panic!(
+                "{}",
+                VqError::InvalidParameter("Dimension must be divisible by m".to_string())
+            );
+        }
         let sub_dim = dim / m;
         let n = training_data.len();
 
@@ -75,6 +127,7 @@ impl OptimizedProductQuantizer {
             codebooks = (0..m)
                 .into_par_iter()
                 .map(|i| {
+                    // Extract the sub-training data for subspace `i`.
                     let sub_training: Vec<Vector<f32>> = rotated_data
                         .iter()
                         .map(|v| {
@@ -83,6 +136,7 @@ impl OptimizedProductQuantizer {
                             Vector::new(v.data[start..end].to_vec())
                         })
                         .collect();
+                    // Learn a codebook for the subspace using LBG quantization.
                     lbg_quantize(&sub_training, k, max_iters, seed + i as u64)
                 })
                 .collect();
@@ -93,11 +147,11 @@ impl OptimizedProductQuantizer {
                 .par_iter()
                 .map(|v| {
                     let mut rec = Vec::with_capacity(dim);
-                    for i in 0..m {
+                    // Use enumerate to iterate over codebooks.
+                    for (i, codebook) in codebooks.iter().enumerate() {
                         let start = i * sub_dim;
                         let end = start + sub_dim;
                         let sub_vector = &v.data[start..end];
-                        let codebook = &codebooks[i];
                         let mut best_index = 0;
                         let mut best_dist = distance.compute(sub_vector, &codebook[0].data);
                         for (j, centroid) in codebook.iter().enumerate().skip(1) {
@@ -107,7 +161,7 @@ impl OptimizedProductQuantizer {
                                 best_index = j;
                             }
                         }
-                        rec.extend_from_slice(&codebooks[i][best_index].data);
+                        rec.extend_from_slice(&codebook[best_index].data);
                     }
                     Vector::new(rec)
                 })
@@ -164,19 +218,35 @@ impl OptimizedProductQuantizer {
     /// A quantized vector (`Vector<f16>`) representing the input vector.
     ///
     /// # Panics
-    /// Panics if the input vector's dimension does not match the expected dimension.
+    /// Panics with a custom error if the input vector's dimension does not match the expected dimension.
     pub fn quantize(&self, vector: &Vector<f32>) -> Vector<f16> {
-        assert_eq!(vector.len(), self.dim, "Input vector has wrong dimension");
+        if vector.len() != self.dim {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: self.dim,
+                    found: vector.len()
+                }
+            );
+        }
         let x = DMatrix::from_column_slice(self.dim, 1, &vector.data);
         let y = &self.rotation * x;
         let y_vec: Vec<f32> = y.column(0).iter().cloned().collect();
-        assert_eq!(y_vec.len(), self.sub_dim * self.m);
+        if y_vec.len() != self.sub_dim * self.m {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: self.sub_dim * self.m,
+                    found: y_vec.len()
+                }
+            );
+        }
         let mut quantized_data = Vec::with_capacity(y_vec.len());
-        for i in 0..self.m {
+        // Use enumerate to iterate over the codebooks.
+        for (i, codebook) in self.codebooks.iter().enumerate() {
             let start = i * self.sub_dim;
             let end = start + self.sub_dim;
             let sub_vector = &y_vec[start..end];
-            let codebook = &self.codebooks[i];
             let mut best_index = 0;
             let mut best_dist = self.distance.compute(sub_vector, &codebook[0].data);
             for (j, centroid) in codebook.iter().enumerate().skip(1) {

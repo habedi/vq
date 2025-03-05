@@ -2,6 +2,7 @@
 mod utils;
 
 use half::{bf16, f16};
+use std::panic;
 use vq::vector::{mean_vector, Vector, PARALLEL_THRESHOLD};
 
 // A small helper to compare floating point numbers with an epsilon.
@@ -104,26 +105,59 @@ fn test_mean_vector_parallel() {
 }
 
 #[test]
-#[should_panic(expected = "Vectors must be same length")]
 fn test_addition_mismatched_dimensions() {
     let a = Vector::new(vec![1.0f32, 2.0]);
     let b = Vector::new(vec![1.0f32, 2.0, 3.0]);
-    let _ = &a + &b;
+    let result = panic::catch_unwind(|| {
+        let _ = &a + &b;
+    });
+    assert!(result.is_err());
+    let err_msg = result
+        .err()
+        .and_then(|e| {
+            e.downcast_ref::<String>()
+                .map(|s| s.to_owned())
+                .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+        })
+        .unwrap_or_default();
+    assert!(err_msg.contains("Dimension mismatch"));
 }
 
 #[test]
-#[should_panic(expected = "Vectors must be same length")]
 fn test_dot_product_mismatched_dimensions() {
     let a = Vector::new(vec![1.0f32, 2.0]);
     let b = Vector::new(vec![1.0f32]);
-    let _ = a.dot(&b);
+    let result = panic::catch_unwind(|| {
+        let _ = a.dot(&b);
+    });
+    assert!(result.is_err());
+    let err_msg = result
+        .err()
+        .and_then(|e| {
+            e.downcast_ref::<String>()
+                .map(|s| s.to_owned())
+                .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+        })
+        .unwrap_or_default();
+    assert!(err_msg.contains("Dimension mismatch"));
 }
 
 #[test]
-#[should_panic(expected = "Cannot compute mean of empty slice")]
 fn test_mean_vector_empty() {
     let vectors: Vec<Vector<f32>> = vec![];
-    let _ = mean_vector(&vectors);
+    let result = panic::catch_unwind(|| {
+        let _ = mean_vector(&vectors);
+    });
+    assert!(result.is_err());
+    let err_msg = result
+        .err()
+        .and_then(|e| {
+            e.downcast_ref::<String>()
+                .map(|s| s.to_owned())
+                .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+        })
+        .unwrap_or_default();
+    assert!(err_msg.contains("Empty input"));
 }
 
 #[test]

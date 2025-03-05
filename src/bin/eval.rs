@@ -12,7 +12,7 @@ mod eval_tsvq;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Which evaluation to run: opq, pq, tsvq, rvq, bq, sq
+    /// Which evaluation to run: opq, pq, tsvq, rvq, bq, or sq
     #[arg(short, long)]
     eval: String,
 }

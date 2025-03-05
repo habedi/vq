@@ -1,38 +1,97 @@
+//! # Distance Metrics
+//!
+//! This module defines the `Distance` enum for comparing vectors using different metrics.
+//! Depending on input size, computations use Rayon for parallelism.
+//!
+//! # Panics
+//! The `compute` method panics with a custom error if the input slices have different lengths
+//! or if a metric-specific parameter is invalid.
+
+use crate::exceptions::VqError;
 use crate::vector::{Real, PARALLEL_THRESHOLD};
 use rayon::prelude::*;
 
-/// Represents various distance metrics for comparing vectors.
-///
-/// Each variant corresponds to a specific metric. When computing distances, if the length of the input
-/// slices exceeds `PARALLEL_THRESHOLD`, parallel iterators (via Rayon) are used for improved performance.
+/// Sums mapped values over two slices using either parallel or sequential iterators.
+#[inline]
+fn zip_map_sum<T, F>(a: &[T], b: &[T], f: F) -> T
+where
+    T: Real + Send + Sync,
+    F: Fn(T, T) -> T + Sync,
+{
+    if a.len() > PARALLEL_THRESHOLD {
+        a.par_iter()
+            .zip(b.par_iter())
+            .map(|(&x, &y)| f(x, y))
+            .reduce(|| T::zero(), |acc, val| acc + val)
+    } else {
+        a.iter()
+            .zip(b.iter())
+            .map(|(&x, &y)| f(x, y))
+            .fold(T::zero(), |acc, val| acc + val)
+    }
+}
+
+/// Reduces mapped values over two slices using the max operator.
+#[inline]
+fn zip_map_max<T, F>(a: &[T], b: &[T], f: F) -> T
+where
+    T: Real + Send + Sync,
+    F: Fn(T, T) -> T + Sync,
+{
+    if a.len() > PARALLEL_THRESHOLD {
+        a.par_iter()
+            .zip(b.par_iter())
+            .map(|(&x, &y)| f(x, y))
+            .reduce(|| T::zero(), |acc, val| if val > acc { val } else { acc })
+    } else {
+        a.iter()
+            .zip(b.iter())
+            .map(|(&x, &y)| f(x, y))
+            .fold(T::zero(), |acc, val| if val > acc { val } else { acc })
+    }
+}
+
+/// Sums mapped values over a single slice.
+#[inline]
+fn map_sum<T, F>(a: &[T], f: F) -> T
+where
+    T: Real + Send + Sync,
+    F: Fn(T) -> T + Sync,
+{
+    if a.len() > PARALLEL_THRESHOLD {
+        a.par_iter()
+            .map(|&x| f(x))
+            .reduce(|| T::zero(), |acc, val| acc + val)
+    } else {
+        a.iter()
+            .map(|&x| f(x))
+            .fold(T::zero(), |acc, val| acc + val)
+    }
+}
+
+/// Enum listing the available distance metrics.
 pub enum Distance {
-    /// Squared Euclidean distance: the sum of the squared differences.
+    /// Squared Euclidean distance (sum of squared differences).
     SquaredEuclidean,
-    /// Euclidean distance: the square root of the sum of the squared differences.
+    /// Euclidean distance (square root of the sum of squared differences).
     Euclidean,
-    /// Cosine distance: defined as 1 minus the cosine similarity.
-    /// If one of the vectors has zero norm, the distance is defined as 1.
+    /// Cosine distance (1 minus the cosine similarity). If a vector has zero norm, returns 1.
     CosineDistance,
-    /// Manhattan distance: the sum of absolute differences.
+    /// Manhattan distance (sum of absolute differences).
     Manhattan,
-    /// Chebyshev distance: the maximum absolute difference.
+    /// Chebyshev distance (maximum absolute difference).
     Chebyshev,
-    /// Minkowski distance: a generalization of Euclidean and Manhattan distances.
-    /// The parameter `p` defines the order of the norm.
+    /// Minkowski distance (generalized distance; `p` sets the norm order).
     Minkowski(f64),
-    /// Hamming distance: counts the number of positions where corresponding elements differ.
+    /// Hamming distance (count of positions where elements differ).
     Hamming,
 }
 
 impl Distance {
-    /// Computes the distance between two slices `a` and `b` using the selected metric.
-    ///
-    /// If the length of the slices exceeds `PARALLEL_THRESHOLD`, the computation is performed in parallel
-    /// using Rayon. Otherwise, sequential iteration is used.
+    /// Compute the distance between two slices `a` and `b` using the selected metric.
     ///
     /// # Type Parameters
-    /// - `T`: The numeric type of the elements in the slices, which must implement the `Real`, `Send`,
-    ///   and `Sync` traits.
+    /// - `T`: A numeric type implementing `Real`, `Send`, and `Sync`.
     ///
     /// # Parameters
     /// - `a`: A slice representing the first vector.
@@ -42,150 +101,72 @@ impl Distance {
     /// The computed distance as a value of type `T`.
     ///
     /// # Panics
-    /// Panics if the lengths of `a` and `b` differ.
+    /// Panics with a custom error if the lengths of `a` and `b` differ or if a metric-specific
+    /// parameter is invalid.
+    ///
+    /// # Example
+    /// ```
+    /// use vq::distances::Distance;
+    /// let a = vec![1.0, 2.0, 3.0];
+    /// let b = vec![4.0, 5.0, 6.0];
+    /// let d = Distance::Euclidean.compute(&a, &b);
+    /// println!("Euclidean distance: {}", d);
+    /// ```
     pub fn compute<T>(&self, a: &[T], b: &[T]) -> T
     where
         T: Real + Send + Sync,
     {
-        assert_eq!(a.len(), b.len(), "Input slices must have the same length");
+        if a.len() != b.len() {
+            panic!(
+                "{}",
+                VqError::DimensionMismatch {
+                    expected: a.len(),
+                    found: b.len()
+                }
+            );
+        }
 
         match self {
-            Distance::SquaredEuclidean => {
-                if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| {
-                            let diff = x - y;
-                            diff * diff
-                        })
-                        .reduce(|| T::zero(), |acc, val| acc + val)
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| {
-                            let diff = x - y;
-                            diff * diff
-                        })
-                        .fold(T::zero(), |acc, val| acc + val)
-                }
-            }
+            Distance::SquaredEuclidean => zip_map_sum(a, b, |x, y| {
+                let diff = x - y;
+                diff * diff
+            }),
             Distance::Euclidean => {
-                let sum = if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| {
-                            let diff = x - y;
-                            diff * diff
-                        })
-                        .reduce(|| T::zero(), |acc, val| acc + val)
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| {
-                            let diff = x - y;
-                            diff * diff
-                        })
-                        .fold(T::zero(), |acc, val| acc + val)
-                };
+                let sum = zip_map_sum(a, b, |x, y| {
+                    let diff = x - y;
+                    diff * diff
+                });
                 sum.sqrt()
             }
             Distance::CosineDistance => {
-                let dot = if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| x * y)
-                        .reduce(|| T::zero(), |acc, val| acc + val)
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| x * y)
-                        .fold(T::zero(), |acc, val| acc + val)
-                };
-
-                let norm_a = if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .map(|&x| x * x)
-                        .reduce(|| T::zero(), |acc, v| acc + v)
-                        .sqrt()
-                } else {
-                    a.iter()
-                        .map(|&x| x * x)
-                        .fold(T::zero(), |acc, v| acc + v)
-                        .sqrt()
-                };
-
-                let norm_b = if b.len() > PARALLEL_THRESHOLD {
-                    b.par_iter()
-                        .map(|&x| x * x)
-                        .reduce(|| T::zero(), |acc, v| acc + v)
-                        .sqrt()
-                } else {
-                    b.iter()
-                        .map(|&x| x * x)
-                        .fold(T::zero(), |acc, v| acc + v)
-                        .sqrt()
-                };
+                let dot = zip_map_sum(a, b, |x, y| x * y);
+                let norm_a = map_sum(a, |x| x * x).sqrt();
+                let norm_b = map_sum(b, |x| x * x).sqrt();
 
                 if norm_a == T::zero() || norm_b == T::zero() {
-                    // If either vector is zero, define cosine distance as 1.
                     T::one()
                 } else {
                     T::one() - dot / (norm_a * norm_b)
                 }
             }
-            Distance::Manhattan => {
-                if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| (x - y).abs())
-                        .reduce(|| T::zero(), |acc, val| acc + val)
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| (x - y).abs())
-                        .fold(T::zero(), |acc, val| acc + val)
-                }
-            }
-            Distance::Chebyshev => {
-                if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| (x - y).abs())
-                        .reduce(|| T::zero(), |acc, val| if val > acc { val } else { acc })
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| (x - y).abs())
-                        .fold(T::zero(), |acc, val| if val > acc { val } else { acc })
-                }
-            }
+            Distance::Manhattan => zip_map_sum(a, b, |x, y| (x - y).abs()),
+            Distance::Chebyshev => zip_map_max(a, b, |x, y| (x - y).abs()),
             Distance::Minkowski(p) => {
+                if *p <= 0.0 {
+                    panic!(
+                        "{}",
+                        VqError::InvalidMetricParameter {
+                            metric: "Minkowski".to_string(),
+                            details: "p must be positive".to_string()
+                        }
+                    );
+                }
                 let p_val = T::from_f64(*p);
-                let sum = if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| (x - y).abs().powf(p_val))
-                        .reduce(|| T::zero(), |acc, val| acc + val)
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| (x - y).abs().powf(p_val))
-                        .fold(T::zero(), |acc, val| acc + val)
-                };
+                let sum = zip_map_sum(a, b, |x, y| (x - y).abs().powf(p_val));
                 sum.powf(T::one() / p_val)
             }
             Distance::Hamming => {
-                if a.len() > PARALLEL_THRESHOLD {
-                    a.par_iter()
-                        .zip(b.par_iter())
-                        .map(|(&x, &y)| if x == y { T::zero() } else { T::one() })
-                        .reduce(|| T::zero(), |acc, val| acc + val)
-                } else {
-                    a.iter()
-                        .zip(b.iter())
-                        .map(|(&x, &y)| if x == y { T::zero() } else { T::one() })
-                        .fold(T::zero(), |acc, val| acc + val)
-                }
+                zip_map_sum(a, b, |x, y| if x == y { T::zero() } else { T::one() })
             }
         }
     }

@@ -3,7 +3,6 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
 use tracing::{info, span, Level};
-use tracing_subscriber;
 
 use vq::distances::Distance;
 use vq::rvq::ResidualQuantizer;
