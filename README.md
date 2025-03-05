@@ -13,7 +13,7 @@
 Vq (**v**[ector] **q**[uantizer]) is a Rust library that implements several
 popular [vector quantization](https://en.wikipedia.org/wiki/Vector_quantization) algorithms including binary, scalar,
 and product quantization.
-It provides a simple, efficient API for data compression that helps reduce memory usage and computational overhead.
+It provides a simple API for data compression that helps reduce memory usage and computational overhead.
 
 ### Features
 
