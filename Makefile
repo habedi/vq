@@ -13,7 +13,8 @@ DEBUG_VQ := 0
 
 .PHONY: help
 help: ## Show this help message
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; \
+ 	{printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: format
 format: ## Format Rust files
@@ -61,6 +62,7 @@ install-deps: install-snap ## Install development dependencies
 	@rustup component add rustfmt clippy
 	@cargo install cargo-tarpaulin
 	@cargo install cargo-audit
+	@cargo install nextest
 
 .PHONY: lint
 lint: format ## Run the linters
@@ -78,7 +80,7 @@ bench: ## Run the benchmarks
 	@DEBUG_VQ=$(DEBUG_VQ) cargo bench
 
 .PHONY: eval
-eval: ## Evaluate an implementation (the ALG should be the algorithm name, e.g., bq, sq, pq, opq, tsvq, rvq)
+eval: ## Evaluate an implementation (ALG must be: bq, sq, pq, opq, tsvq, or rvq)
 	@echo && if [ -z "$(ALG)" ]; then echo "Please provide the ALG argument"; exit 1; fi
 	@echo "Evaluating implementation with argument: $(ALG)"
 	@cargo run --release --features binaries --bin eval -- --eval $(ALG)
@@ -92,3 +94,18 @@ eval-all: ## Evaluate all the implementations (bq, sq, pq, opq, tsvq, rvq)
 	@make eval ALG=opq
 	@make eval ALG=tsvq
 	@make eval ALG=rvq
+
+.PHONY: fix-lint
+fix-lint: ## Fix the linter warnings
+	@echo "Fixing linter warnings..."
+	@cargo clippy --fix --allow-dirty --allow-staged --all-targets --workspace --all-features -- -D warnings
+
+.PHONY: nextest
+nextest: ## Run tests using nextest
+	@echo "Running tests using nextest..."
+	@DEBUG_VQ=$(DEBUG_VQ) RUST_BACKTRACE=$(RUST_BACKTRACE) cargo nextest run
+
+.PHONY: doc
+doc: format ## Generate the documentation
+	@echo "Generating documentation..."
+	@cargo doc --no-deps --document-private-items

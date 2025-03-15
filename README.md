@@ -8,12 +8,13 @@
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?label=docs.rs&style=flat&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/vq)
 [<img alt="downloads" src="https://img.shields.io/crates/d/vq?label=downloads&style=flat&labelColor=555555&logo=rust" height="20">](https://crates.io/crates/vq)
 [<img alt="msrv" src="https://img.shields.io/badge/msrv-1.83.0-orange?label=msrv&style=flat&labelColor=555555&logo=rust" height="20">](https://github.com/rust-lang/rust/releases/tag/1.83.0)
+[<img alt="dependencies" src="https://deps.rs/repo/github/habedi/vq/status.svg">](https://deps.rs/repo/github/habedi/vq)
 [<img alt="license" src="https://img.shields.io/badge/license-mit%2Fapache--2.0-007ec6?label=license&style=flat&labelColor=555555&logo=open-source-initiative" height="20">](https://github.com/habedi/vq)
 
 Vq (**v**[ector] **q**[uantizer]) is a Rust library that implements several
 popular [vector quantization](https://en.wikipedia.org/wiki/Vector_quantization) algorithms including binary, scalar,
 and product quantization.
-It provides a simple, efficient API for data compression that helps reduce memory usage and computational overhead.
+It provides a simple API for data compression that helps reduce memory usage and computational overhead.
 
 ### Features
 
