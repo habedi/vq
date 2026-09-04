@@ -11,6 +11,6 @@ doc = false
 
 [dependencies]
 vq = { path = "..", features = ["simd", "parallel"] }
-pyo3 = { version = "=0.24.1", features = ["abi3-py310", "extension-module", "auto-initialize"] }
-numpy = { version = "=0.24", features = ["half"] }
+pyo3 = { version = "0.29.2", features = ["abi3-py310", "extension-module", "auto-initialize"] }
+numpy = { version = "0.29", features = ["half"] }
 half = "2.4"
