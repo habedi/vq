@@ -171,15 +171,15 @@ def test_cosine_distance_handles_near_zero_norm():
 
 
 def test_cosine_distance_result_in_valid_range():
-    """Test that cosine distance is always in [0, 1]."""
+    """Test that cosine distance is always in [0, 2]."""
     a = np.array([1.0, 0.0, 0.0], dtype=np.float32)
     b = np.array([1.0, 0.0, 0.0], dtype=np.float32)
 
     dist = pyvq.Distance.cosine()
     result = dist.compute(a, b)
 
-    # Distance should be in valid range [0, 1]
-    assert 0.0 <= result <= 1.0
+    # Distance should be in valid range [0, 2]
+    assert 0.0 <= result <= 2.0
     assert abs(result) < 1e-6  # Should be very close to 0
 
 

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use rand::Rng;
+use rand::RngExt;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use vq::Vector;
@@ -13,13 +13,13 @@ pub fn seeded_rng() -> StdRng {
     StdRng::seed_from_u64(SEED)
 }
 
-fn generate_random_vector<R: Rng>(rng: &mut R, dim: usize) -> Vector<f32> {
+fn generate_random_vector<R: RngExt>(rng: &mut R, dim: usize) -> Vector<f32> {
     let data: Vec<f32> = (0..dim)
         .map(|_| rng.random_range(MIN_VAL..MAX_VAL))
         .collect();
     Vector::new(data)
 }
 
-pub fn generate_test_data<R: Rng>(rng: &mut R, n: usize, dim: usize) -> Vec<Vector<f32>> {
+pub fn generate_test_data<R: RngExt>(rng: &mut R, n: usize, dim: usize) -> Vec<Vector<f32>> {
     (0..n).map(|_| generate_random_vector(rng, dim)).collect()
 }

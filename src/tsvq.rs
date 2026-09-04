@@ -71,6 +71,15 @@ impl TSVQNode {
             .filter(|&x| !x.is_nan()) // Filter out NaN values before sorting
             .collect();
 
+        // Every value on the split dimension was NaN, so there is nothing to split on
+        if values.is_empty() {
+            return Ok(TSVQNode {
+                centroid,
+                left: None,
+                right: None,
+            });
+        }
+
         // Use total_cmp for stable sorting even with infinities
         values.sort_by(|a, b| a.total_cmp(b));
 

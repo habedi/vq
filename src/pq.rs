@@ -103,6 +103,12 @@ impl ProductQuantizer {
             }
         }
 
+        if m == 0 {
+            return Err(VqError::InvalidParameter {
+                parameter: "m",
+                reason: "must be greater than 0".to_string(),
+            });
+        }
         if dim < m {
             return Err(VqError::InvalidParameter {
                 parameter: "m",
@@ -127,7 +133,7 @@ impl ProductQuantizer {
                     Vector::new(v[start..end].to_vec())
                 })
                 .collect();
-            let codebook = lbg_quantize(&sub_training, k, max_iters, seed + i as u64)?;
+            let codebook = lbg_quantize(&sub_training, k, max_iters, seed.wrapping_add(i as u64))?;
             codebooks.push(codebook);
         }
 

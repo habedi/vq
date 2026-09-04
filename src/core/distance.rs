@@ -114,8 +114,8 @@ fn compute_cosine_distance(a: &[f32], b: &[f32]) -> f32 {
         // Zero or near-zero vectors are considered maximally distant
         1.0
     } else {
-        // Clamp result to [0, 1] to handle floating-point errors
-        (1.0 - (dot / (norm_a * norm_b))).clamp(0.0, 1.0)
+        // Cosine distance ranges over [0, 2]; clamp to absorb floating-point errors
+        (1.0 - (dot / (norm_a * norm_b))).clamp(0.0, 2.0)
     }
 }
 
@@ -179,7 +179,7 @@ mod tests {
         use crate::core::hsdlib_ffi;
 
         let mut rng = rand::rng();
-        use rand::Rng;
+        use rand::RngExt;
 
         let len = 100;
         let a: Vec<f32> = (0..len).map(|_| rng.random::<f32>()).collect();

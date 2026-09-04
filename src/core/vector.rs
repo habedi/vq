@@ -410,7 +410,7 @@ pub fn lbg_quantize(
     }
 
     let mut rng = StdRng::seed_from_u64(seed);
-    let mut centroids: Vec<Vector<f32>> = data.choose_multiple(&mut rng, k).cloned().collect();
+    let mut centroids: Vec<Vector<f32>> = data.sample(&mut rng, k).cloned().collect();
 
     for _ in 0..max_iters {
         // Compute assignments (parallel when feature enabled)
