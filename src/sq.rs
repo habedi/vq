@@ -4,7 +4,9 @@
 //! mapping each input value to its nearest quantization level.
 
 use crate::core::error::{VqError, VqResult};
+use crate::core::persist::impl_persist;
 use crate::core::quantizer::Quantizer;
+use serde::{Deserialize, Serialize};
 
 /// Scalar quantizer that uniformly quantizes values in a range to discrete levels.
 ///
@@ -18,6 +20,7 @@ use crate::core::quantizer::Quantizer;
 /// let quantized = sq.quantize(&[0.0, 0.5, 1.0]).unwrap();
 /// assert_eq!(quantized, vec![0, 5, 10]);
 /// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScalarQuantizer {
     min: f32,
     max: f32,
@@ -100,6 +103,11 @@ impl ScalarQuantizer {
         })
     }
 
+    fn validate(self) -> VqResult<Self> {
+        // Rebuild from the parameters so the step is recomputed and range checks rerun
+        Self::new(self.min, self.max, self.levels)
+    }
+
     /// Returns the minimum value in the quantization range.
     pub fn min(&self) -> f32 {
         self.min
@@ -126,6 +134,8 @@ impl ScalarQuantizer {
         index.min(self.levels - 1)
     }
 }
+
+impl_persist!(ScalarQuantizer);
 
 impl Quantizer for ScalarQuantizer {
     type QuantizedOutput = Vec<u8>;

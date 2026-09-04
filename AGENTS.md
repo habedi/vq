@@ -124,7 +124,6 @@ Run the relevant targets for any change:
 | Differential    | `make test-diff`  | Reference comparisons with and without features   |
 | Rust lint       | `make lint`       | `cargo clippy` with warnings denied               |
 | Rust build      | `make build`      | Release build                                     |
-| Rust benchmarks | `make bench`      | `cargo bench --features all`                      |
 | Coverage        | `make coverage`   | Tarpaulin XML and HTML coverage reports           |
 | Security audit  | `make audit`      | `cargo audit`                                     |
 | Careful checks  | `make careful`    | `cargo careful run`                               |

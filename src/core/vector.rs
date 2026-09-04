@@ -1,5 +1,6 @@
 use half::f16;
 use rand::prelude::{IndexedRandom, SeedableRng, StdRng};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
@@ -74,7 +75,7 @@ impl Real for f16 {
 ///
 /// Wraps a standard `Vec<T>` and provides vector arithmetic operations
 /// like addition, subtraction, dot product, and norm.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Vector<T: Real> {
     /// The underlying data storage.
     pub data: Vec<T>,

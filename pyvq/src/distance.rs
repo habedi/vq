@@ -39,7 +39,7 @@ impl Distance {
             _ => {
                 return Err(PyValueError::new_err(
                     "Invalid distance metric. Choose from: euclidean, squared_euclidean, cosine, manhattan",
-                ))
+                ));
             }
         };
         Ok(Distance { metric: m })

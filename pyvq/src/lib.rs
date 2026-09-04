@@ -1,3 +1,4 @@
+mod batch;
 mod bq;
 mod distance;
 mod pq;

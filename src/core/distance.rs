@@ -1,10 +1,11 @@
 use crate::core::error::{VqError, VqResult};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "simd")]
 use crate::core::hsdlib_ffi;
 
 /// Supported distance metrics for vector comparisons.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Distance {
     /// Squared Euclidean distance (L2²). Efficient for comparisons as it avoids square roots.
     SquaredEuclidean,

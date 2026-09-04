@@ -114,11 +114,6 @@ publish: ## Publish the package to crates.io (requires CARGO_REGISTRY_TOKEN to b
 	@echo "Publishing package to Cargo registry..."
 	@cargo publish --token $(CARGO_REGISTRY_TOKEN)
 
-.PHONY: bench
-bench: ## Run benchmarks
-	@echo "Running benchmarks..."
-	@DEBUG_VQ=$(DEBUG_VQ) cargo bench --features all
-
 .PHONY: audit
 audit: ## Run security audit on Rust dependencies
 	@echo "Running security audit..."

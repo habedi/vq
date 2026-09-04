@@ -1,7 +1,11 @@
+use crate::batch;
 use half::f16;
-use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
-use pyo3::exceptions::PyValueError;
+use numpy::{
+    IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods,
+};
+use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 use vq::pq::ProductQuantizer as VqProductQuantizer;
 use vq::{Distance as VqDistance, Quantizer};
 
@@ -70,9 +74,7 @@ impl ProductQuantizer {
             .collect();
 
         let training_refs: Vec<&[f32]> = training_vec.iter().map(|v| v.as_slice()).collect();
-        let dist = distance
-            .map(|d| d.metric)
-            .unwrap_or(VqDistance::Euclidean);
+        let dist = distance.map(|d| d.metric).unwrap_or(VqDistance::Euclidean);
 
         VqProductQuantizer::new(
             &training_refs,
@@ -127,6 +129,67 @@ impl ProductQuantizer {
     }
 
     /// The number of subspaces.
+    /// Quantize every row of a 2-D array at once.
+    fn quantize_batch<'py>(
+        &self,
+        py: Python<'py>,
+        vectors: PyReadonlyArray2<f32>,
+    ) -> PyResult<Bound<'py, PyArray2<f16>>> {
+        let rows = batch::rows(&vectors)?;
+        let result = py
+            .detach(|| self.quantizer.quantize_batch(&rows))
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        batch::to_array2(py, result, vectors.shape()[1])
+    }
+
+    /// Reconstruct every row of a 2-D array of codes at once.
+    fn dequantize_batch<'py>(
+        &self,
+        py: Python<'py>,
+        codes: PyReadonlyArray2<f16>,
+    ) -> PyResult<Bound<'py, PyArray2<f32>>> {
+        let rows: Vec<Vec<f16>> = batch::rows(&codes)?
+            .into_iter()
+            .map(|r| r.to_vec())
+            .collect();
+        let result = py
+            .detach(|| self.quantizer.dequantize_batch(&rows))
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        batch::to_array2(py, result, codes.shape()[1])
+    }
+
+    /// Encode the quantizer into bytes.
+    fn to_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let bytes = self
+            .quantizer
+            .to_bytes()
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(PyBytes::new(py, &bytes))
+    }
+
+    /// Restore a quantizer from bytes produced by `to_bytes`.
+    #[staticmethod]
+    fn from_bytes(data: &[u8]) -> PyResult<Self> {
+        VqProductQuantizer::from_bytes(data)
+            .map(|q| Self { quantizer: q })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Write the quantizer to a file.
+    fn save(&self, path: std::path::PathBuf) -> PyResult<()> {
+        self.quantizer
+            .save(path)
+            .map_err(|e| PyIOError::new_err(e.to_string()))
+    }
+
+    /// Read a quantizer from a file written by `save`.
+    #[staticmethod]
+    fn load(path: std::path::PathBuf) -> PyResult<Self> {
+        VqProductQuantizer::load(path)
+            .map(|q| Self { quantizer: q })
+            .map_err(|e| PyIOError::new_err(e.to_string()))
+    }
+
     #[getter]
     fn num_subspaces(&self) -> usize {
         self.quantizer.num_subspaces()

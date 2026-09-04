@@ -45,6 +45,8 @@ class BinaryQuantizer:
         """Input: float32, Output: uint8"""
     
     def dequantize(self, codes: np.ndarray) -> np.ndarray
+    def quantize_batch(self, vectors: np.ndarray) -> np.ndarray
+    def dequantize_batch(self, codes: np.ndarray) -> np.ndarray
         """Input: uint8, Output: float32"""
     
     # Properties
@@ -74,6 +76,8 @@ class ScalarQuantizer:
         """Input: float32, Output: uint8"""
     
     def dequantize(self, codes: np.ndarray) -> np.ndarray
+    def quantize_batch(self, vectors: np.ndarray) -> np.ndarray
+    def dequantize_batch(self, codes: np.ndarray) -> np.ndarray
         """Input: uint8, Output: float32"""
     
     # Properties
@@ -112,6 +116,8 @@ class ProductQuantizer:
         """Input: float32, Output: float16"""
     
     def dequantize(self, codes: np.ndarray) -> np.ndarray
+    def quantize_batch(self, vectors: np.ndarray) -> np.ndarray
+    def dequantize_batch(self, codes: np.ndarray) -> np.ndarray
         """Input: float16, Output: float32"""
     
     # Properties
@@ -151,6 +157,8 @@ class TSVQ:
         """Input: float32, Output: float16"""
     
     def dequantize(self, codes: np.ndarray) -> np.ndarray
+    def quantize_batch(self, vectors: np.ndarray) -> np.ndarray
+    def dequantize_batch(self, codes: np.ndarray) -> np.ndarray
         """Input: float16, Output: float32"""
     
     # Properties
@@ -169,6 +177,31 @@ codes = tsvq.quantize(training[0])
 ```
 
 ---
+
+## Batch Methods
+
+Every quantizer also accepts a 2-D array of shape `(n, dim)`:
+
+```python
+codes = sq.quantize_batch(np.random.rand(1000, 128).astype(np.float32))
+reconstructed = sq.dequantize_batch(codes)
+```
+
+`quantize_batch` and `dequantize_batch` release the GIL and, when the extension is built with the `parallel` feature, process rows in parallel. They raise `ValueError` on the first row with an invalid dimension. Inputs must be C-contiguous.
+
+## Persistence
+
+Trained quantizers can be saved and restored:
+
+```python
+pq.save("model.vq")
+restored = pyvq.ProductQuantizer.load("model.vq")
+
+blob = tsvq.to_bytes()
+restored = pyvq.TSVQ.from_bytes(blob)
+```
+
+`from_bytes` raises `ValueError` for malformed data. `save` and `load` raise `OSError` on file errors. Files written by the Rust crate and by PyVq use the same format.
 
 ## Utility Functions
 

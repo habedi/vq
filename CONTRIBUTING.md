@@ -5,8 +5,8 @@ Contributions are always welcome and appreciated.
 
 ### How to Contribute
 
-Please check the [issue tracker](https://github.com/CogitatorTech/vq/issues) to see if there is an issue you
-would like to work on or if it has already been resolved.
+Please check the [issue tracker](https://github.com/CogitatorTech/vq/issues) to see if there is an issue you would like to work on or if it has
+already been resolved.
 
 #### Reporting Bugs
 
@@ -38,7 +38,8 @@ would like to work on or if it has already been resolved.
 #### Running Tests
 
 - Use the `make test` command to run the tests.
-- Use the `make test-diff` command to run the differential tests, which compare the library against reference implementations with and without the `simd` and `parallel` features.
+- Use the `make test-diff` command to run the differential tests, which compare the library against reference implementations with and without the
+  `simd` and `parallel` features.
 
 #### Running Linters
 

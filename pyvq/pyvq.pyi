@@ -4,7 +4,9 @@ Type stubs for PyVq - Python bindings for Vq vector quantization library.
 This file provides type hints for IDEs and type checkers.
 """
 
+import os
 from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -137,6 +139,69 @@ class BinaryQuantizer:
         """
         ...
 
+    def quantize_batch(self, vectors: NDArray[np.float32]) -> NDArray[np.uint8]:
+        """
+        Quantize every row of a 2-D array at once.
+
+        Args:
+            vectors: 2-D numpy array of shape (n, dim) with float32 values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with quantized values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def dequantize_batch(self, codes: NDArray[np.uint8]) -> NDArray[np.float32]:
+        """
+        Reconstruct every row of a 2-D array of codes at once.
+
+        Args:
+            codes: 2-D numpy array of shape (n, dim) with quantized values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with float32 values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def to_bytes(self) -> bytes:
+        """Encode the quantizer into bytes that `from_bytes` can restore."""
+        ...
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "BinaryQuantizer":
+        """
+        Restore a quantizer from bytes produced by `to_bytes`.
+
+        Raises:
+            ValueError: If the bytes are malformed or describe an invalid quantizer.
+        """
+        ...
+
+    def save(self, path: str | os.PathLike[str]) -> None:
+        """
+        Write the quantizer to a file.
+
+        Raises:
+            OSError: If the file cannot be written.
+        """
+        ...
+
+    @staticmethod
+    def load(path: str | os.PathLike[str]) -> "BinaryQuantizer":
+        """
+        Read a quantizer from a file written by `save`.
+
+        Raises:
+            OSError: If the file cannot be read or is malformed.
+        """
+        ...
+
     @property
     def threshold(self) -> float:
         """The threshold value."""
@@ -201,6 +266,69 @@ class ScalarQuantizer:
 
         Returns:
             numpy array of reconstructed float values (float32).
+        """
+        ...
+
+    def quantize_batch(self, vectors: NDArray[np.float32]) -> NDArray[np.uint8]:
+        """
+        Quantize every row of a 2-D array at once.
+
+        Args:
+            vectors: 2-D numpy array of shape (n, dim) with float32 values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with quantized values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def dequantize_batch(self, codes: NDArray[np.uint8]) -> NDArray[np.float32]:
+        """
+        Reconstruct every row of a 2-D array of codes at once.
+
+        Args:
+            codes: 2-D numpy array of shape (n, dim) with quantized values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with float32 values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def to_bytes(self) -> bytes:
+        """Encode the quantizer into bytes that `from_bytes` can restore."""
+        ...
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "ScalarQuantizer":
+        """
+        Restore a quantizer from bytes produced by `to_bytes`.
+
+        Raises:
+            ValueError: If the bytes are malformed or describe an invalid quantizer.
+        """
+        ...
+
+    def save(self, path: str | os.PathLike[str]) -> None:
+        """
+        Write the quantizer to a file.
+
+        Raises:
+            OSError: If the file cannot be written.
+        """
+        ...
+
+    @staticmethod
+    def load(path: str | os.PathLike[str]) -> "ScalarQuantizer":
+        """
+        Read a quantizer from a file written by `save`.
+
+        Raises:
+            OSError: If the file cannot be read or is malformed.
         """
         ...
 
@@ -297,6 +425,69 @@ class ProductQuantizer:
         """
         ...
 
+    def quantize_batch(self, vectors: NDArray[np.float32]) -> NDArray[np.float16]:
+        """
+        Quantize every row of a 2-D array at once.
+
+        Args:
+            vectors: 2-D numpy array of shape (n, dim) with float32 values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with quantized values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def dequantize_batch(self, codes: NDArray[np.float16]) -> NDArray[np.float32]:
+        """
+        Reconstruct every row of a 2-D array of codes at once.
+
+        Args:
+            codes: 2-D numpy array of shape (n, dim) with quantized values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with float32 values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def to_bytes(self) -> bytes:
+        """Encode the quantizer into bytes that `from_bytes` can restore."""
+        ...
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "ProductQuantizer":
+        """
+        Restore a quantizer from bytes produced by `to_bytes`.
+
+        Raises:
+            ValueError: If the bytes are malformed or describe an invalid quantizer.
+        """
+        ...
+
+    def save(self, path: str | os.PathLike[str]) -> None:
+        """
+        Write the quantizer to a file.
+
+        Raises:
+            OSError: If the file cannot be written.
+        """
+        ...
+
+    @staticmethod
+    def load(path: str | os.PathLike[str]) -> "ProductQuantizer":
+        """
+        Read a quantizer from a file written by `save`.
+
+        Raises:
+            OSError: If the file cannot be read or is malformed.
+        """
+        ...
+
     @property
     def num_subspaces(self) -> int:
         """The number of subspaces."""
@@ -372,6 +563,69 @@ class TSVQ:
 
         Returns:
             Reconstructed vector as numpy array (float32).
+        """
+        ...
+
+    def quantize_batch(self, vectors: NDArray[np.float32]) -> NDArray[np.float16]:
+        """
+        Quantize every row of a 2-D array at once.
+
+        Args:
+            vectors: 2-D numpy array of shape (n, dim) with float32 values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with quantized values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def dequantize_batch(self, codes: NDArray[np.float16]) -> NDArray[np.float32]:
+        """
+        Reconstruct every row of a 2-D array of codes at once.
+
+        Args:
+            codes: 2-D numpy array of shape (n, dim) with quantized values.
+
+        Returns:
+            2-D numpy array of shape (n, dim) with float32 values.
+
+        Raises:
+            ValueError: If a row has an invalid dimension.
+        """
+        ...
+
+    def to_bytes(self) -> bytes:
+        """Encode the quantizer into bytes that `from_bytes` can restore."""
+        ...
+
+    @staticmethod
+    def from_bytes(data: bytes) -> "TSVQ":
+        """
+        Restore a quantizer from bytes produced by `to_bytes`.
+
+        Raises:
+            ValueError: If the bytes are malformed or describe an invalid quantizer.
+        """
+        ...
+
+    def save(self, path: str | os.PathLike[str]) -> None:
+        """
+        Write the quantizer to a file.
+
+        Raises:
+            OSError: If the file cannot be written.
+        """
+        ...
+
+    @staticmethod
+    def load(path: str | os.PathLike[str]) -> "TSVQ":
+        """
+        Read a quantizer from a file written by `save`.
+
+        Raises:
+            OSError: If the file cannot be read or is malformed.
         """
         ...
 

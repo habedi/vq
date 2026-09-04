@@ -6,10 +6,13 @@
 
 use crate::core::distance::Distance;
 use crate::core::error::{VqError, VqResult};
+use crate::core::persist::impl_persist;
 use crate::core::quantizer::Quantizer;
 use crate::core::vector::{Vector, mean_vector};
 use half::f16;
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct TSVQNode {
     centroid: Vector<f32>,
     left: Option<Box<TSVQNode>>,
@@ -123,6 +126,13 @@ impl TSVQNode {
         })
     }
 
+    /// Checks that every centroid in the subtree has the given dimension.
+    fn has_dimension(&self, dim: usize) -> bool {
+        self.centroid.len() == dim
+            && self.left.as_ref().is_none_or(|n| n.has_dimension(dim))
+            && self.right.as_ref().is_none_or(|n| n.has_dimension(dim))
+    }
+
     fn find_leaf<'a>(&'a self, vector: &[f32], distance: &Distance) -> VqResult<&'a TSVQNode> {
         match (&self.left, &self.right) {
             (Some(left), Some(right)) => {
@@ -164,6 +174,7 @@ impl TSVQNode {
 /// let quantized = tsvq.quantize(&training[0]).unwrap();
 /// assert_eq!(quantized.len(), 6);
 /// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TSVQ {
     root: TSVQNode,
     dim: usize,
@@ -231,6 +242,15 @@ impl TSVQ {
         })
     }
 
+    fn validate(self) -> VqResult<Self> {
+        if self.dim == 0 || !self.root.has_dimension(self.dim) {
+            return Err(VqError::Serialization(
+                "tree centroids do not match the dimension".to_string(),
+            ));
+        }
+        Ok(self)
+    }
+
     /// Returns the expected input vector dimension.
     pub fn dim(&self) -> usize {
         self.dim
@@ -241,6 +261,8 @@ impl TSVQ {
         self.distance.name()
     }
 }
+
+impl_persist!(TSVQ);
 
 impl Quantizer for TSVQ {
     type QuantizedOutput = Vec<f16>;

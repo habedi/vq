@@ -6,9 +6,11 @@
 
 use crate::core::distance::Distance;
 use crate::core::error::{VqError, VqResult};
+use crate::core::persist::impl_persist;
 use crate::core::quantizer::Quantizer;
 use crate::core::vector::{Vector, lbg_quantize};
 use half::f16;
+use serde::{Deserialize, Serialize};
 
 /// Product quantizer that divides vectors into subspaces and quantizes each separately.
 ///
@@ -36,6 +38,7 @@ use half::f16;
 /// let quantized = pq.quantize(&training[0]).unwrap();
 /// assert_eq!(quantized.len(), 8);
 /// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProductQuantizer {
     codebooks: Vec<Vec<Vector<f32>>>,
     sub_dim: usize,
@@ -146,6 +149,29 @@ impl ProductQuantizer {
         })
     }
 
+    fn validate(self) -> VqResult<Self> {
+        let invalid = |reason: &str| VqError::Serialization(reason.to_string());
+        if self.m == 0 || self.sub_dim == 0 || self.m * self.sub_dim != self.dim {
+            return Err(invalid("subspace layout does not match the dimension"));
+        }
+        if self.codebooks.len() != self.m {
+            return Err(invalid(
+                "number of codebooks does not match the subspace count",
+            ));
+        }
+        for codebook in &self.codebooks {
+            if codebook.is_empty() {
+                return Err(invalid("codebook has no centroids"));
+            }
+            if codebook.iter().any(|c| c.len() != self.sub_dim) {
+                return Err(invalid(
+                    "centroid dimension does not match the subspace dimension",
+                ));
+            }
+        }
+        Ok(self)
+    }
+
     /// Returns the number of subspaces.
     pub fn num_subspaces(&self) -> usize {
         self.m
@@ -166,6 +192,8 @@ impl ProductQuantizer {
         self.distance.name()
     }
 }
+
+impl_persist!(ProductQuantizer);
 
 impl Quantizer for ProductQuantizer {
     type QuantizedOutput = Vec<f16>;
