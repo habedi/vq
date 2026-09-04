@@ -50,6 +50,13 @@ doctest: ## Run documentation tests (Rust code examples in doc comments)
 	@echo "Running documentation tests..."
 	@cargo test --doc --features all
 
+.PHONY: test-diff
+test-diff: ## Run differential tests against reference implementations (with and without SIMD and parallel features)
+	@echo "Running differential tests (default features)..."
+	@cargo test --test differential_tests
+	@echo "Running differential tests (all features)..."
+	@cargo test --test differential_tests --features all
+
 .PHONY: coverage
 coverage: format doctest ## Generate test coverage report
 	@echo "Generating test coverage report..."

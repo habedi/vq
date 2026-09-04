@@ -121,6 +121,7 @@ Run the relevant targets for any change:
 | Rust format     | `make format`     | `cargo fmt`                                       |
 | Rust tests      | `make test`       | Format, doctests, and `cargo test --features all` |
 | Rust doctests   | `make doctest`    | Rust documentation tests with all features        |
+| Differential    | `make test-diff`  | Reference comparisons with and without features   |
 | Rust lint       | `make lint`       | `cargo clippy` with warnings denied               |
 | Rust build      | `make build`      | Release build                                     |
 | Rust benchmarks | `make bench`      | `cargo bench --features all`                      |
@@ -162,6 +163,7 @@ Good first tasks:
 - Include shape and dimensionality checks for vector inputs and outputs.
 - Include negative tests for invalid parameters and incompatible vector dimensions.
 - Compare floating-point results with tolerances instead of exact equality when appropriate.
+- Differential tests in `tests/differential_tests.rs` and `pyvq/tests/test_differential.py` compare the library against reference implementations; extend them when adding a quantizer or distance.
 - Keep long-running benchmark or evaluation workloads out of regular unit tests.
 - Test Python binding behavior when exposed Python APIs change.
 

@@ -159,6 +159,42 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_status_conversion() {
+        assert_eq!(HsdStatus::from(0), HsdStatus::Success);
+        assert_eq!(HsdStatus::from(-1), HsdStatus::ErrNullPtr);
+        assert_eq!(HsdStatus::from(-3), HsdStatus::ErrInvalidInput);
+        assert_eq!(HsdStatus::from(-4), HsdStatus::ErrCpuNotSupported);
+        assert_eq!(HsdStatus::from(-99), HsdStatus::Failure);
+        assert_eq!(HsdStatus::from(12345), HsdStatus::Failure);
+        assert!(HsdStatus::Success.is_success());
+        assert!(!HsdStatus::Failure.is_success());
+    }
+
+    #[test]
+    fn test_kernels_reject_length_mismatch() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0];
+        assert!(manhattan_f32(&a, &b).is_none());
+        assert!(cosine_f32(&a, &b).is_none());
+    }
+
+    #[test]
+    fn test_kernels_reject_non_finite_input() {
+        let a = vec![1.0, f32::INFINITY];
+        let b = vec![1.0, 2.0];
+        assert!(sqeuclidean_f32(&a, &b).is_none());
+        assert!(manhattan_f32(&a, &b).is_none());
+        assert!(cosine_f32(&a, &b).is_none());
+    }
+
+    #[test]
+    fn test_kernels_accept_empty_input() {
+        let empty: Vec<f32> = vec![];
+        assert_eq!(sqeuclidean_f32(&empty, &empty), Some(0.0));
+        assert_eq!(manhattan_f32(&empty, &empty), Some(0.0));
+    }
+
+    #[test]
     fn test_backend_detection() {
         let backend = get_simd_backend();
         assert!(!backend.is_empty());

@@ -313,4 +313,71 @@ mod tests {
         let result = TSVQ::new(&data, 3, Distance::Euclidean);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_inconsistent_training_dimensions() {
+        let data = [vec![1.0, 2.0], vec![1.0, 2.0, 3.0]];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        assert!(matches!(
+            TSVQ::new(&refs, 2, Distance::Euclidean),
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_quantize_and_dequantize_dimension_mismatch() {
+        let data = [vec![1.0, 2.0], vec![3.0, 4.0]];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let tsvq = TSVQ::new(&refs, 2, Distance::Euclidean).unwrap();
+        assert!(matches!(
+            tsvq.quantize(&[1.0]),
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 1
+            })
+        ));
+        assert!(matches!(
+            tsvq.dequantize(&vec![f16::from_f32(1.0); 3]),
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_depth_zero_returns_mean() {
+        let data = [vec![0.0, 2.0], vec![4.0, 6.0]];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let tsvq = TSVQ::new(&refs, 0, Distance::Euclidean).unwrap();
+        let recon = tsvq
+            .dequantize(&tsvq.quantize(&[100.0, 100.0]).unwrap())
+            .unwrap();
+        assert_eq!(recon, vec![2.0, 4.0]);
+        assert_eq!(tsvq.dim(), 2);
+        assert_eq!(tsvq.distance_metric(), "euclidean");
+    }
+
+    #[test]
+    fn test_two_clusters_are_separated() {
+        let data = [
+            vec![0.0, 0.0],
+            vec![0.1, 0.0],
+            vec![10.0, 10.0],
+            vec![10.1, 10.0],
+        ];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let tsvq = TSVQ::new(&refs, 1, Distance::SquaredEuclidean).unwrap();
+        let low = tsvq
+            .dequantize(&tsvq.quantize(&[0.5, 0.5]).unwrap())
+            .unwrap();
+        let high = tsvq
+            .dequantize(&tsvq.quantize(&[9.5, 9.5]).unwrap())
+            .unwrap();
+        assert!((low[0] - 0.05).abs() < 1e-2);
+        assert!((high[0] - 10.05).abs() < 1e-2);
+    }
 }

@@ -329,6 +329,51 @@ fn test_tsvq_handles_all_nan_training_data() {
 }
 
 // =============================================================================
+// Bug Fix: lbg_quantize stopped early after reseeding an empty cluster
+// =============================================================================
+
+#[test]
+fn test_lbg_quantize_refines_reseeded_centroids() {
+    // Bug: replacing an empty cluster's centroid with a random point did not mark the
+    // iteration as changed, so the loop could exit with an unrefined centroid.
+    // When both initial centroids are the duplicated global mean, the first cluster is
+    // already stable and the second is empty, so the old code returned the random
+    // replacement without ever assigning points to it.
+    let data = vec![
+        Vector::new(vec![0.0, 0.0]),
+        Vector::new(vec![10.0, 10.0]),
+        Vector::new(vec![5.0, 5.0]),
+        Vector::new(vec![5.0, 5.0]),
+    ];
+
+    for seed in 0..200u64 {
+        let centroids = lbg_quantize(&data, 2, 100, seed).unwrap();
+        // Every returned centroid must be the mean of the points assigned to it
+        for c in &centroids {
+            let assigned: Vec<&Vector<f32>> = data
+                .iter()
+                .filter(|v| {
+                    let d = v.distance2(c);
+                    centroids.iter().all(|other| d <= v.distance2(other))
+                })
+                .collect();
+            assert!(
+                !assigned.is_empty(),
+                "seed {seed}: centroid {c} owns no points"
+            );
+            let n = assigned.len() as f32;
+            for (i, &x) in c.data.iter().enumerate() {
+                let mean: f32 = assigned.iter().map(|v| v.data[i]).sum::<f32>() / n;
+                assert!(
+                    (x - mean).abs() < 1e-5,
+                    "seed {seed}: centroid {c} is not a cluster mean"
+                );
+            }
+        }
+    }
+}
+
+// =============================================================================
 // Bug Fix: ProductQuantizer panicked on zero subspaces or a maximal seed
 // =============================================================================
 

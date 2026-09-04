@@ -244,6 +244,72 @@ mod tests {
     }
 
     #[test]
+    fn test_inconsistent_training_dimensions() {
+        let data = [vec![1.0, 2.0], vec![1.0, 2.0, 3.0]];
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let result = ProductQuantizer::new(&data_refs, 1, 1, 10, Distance::Euclidean, 42);
+        assert!(matches!(
+            result,
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_too_many_centroids_for_training_size() {
+        let data = generate_test_data(3, 4);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let result = ProductQuantizer::new(&data_refs, 2, 4, 10, Distance::Euclidean, 42);
+        assert!(matches!(
+            result,
+            Err(VqError::InvalidParameter { parameter: "k", .. })
+        ));
+    }
+
+    #[test]
+    fn test_dequantize_dimension_mismatch() {
+        let data = generate_test_data(20, 4);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let pq = ProductQuantizer::new(&data_refs, 2, 2, 10, Distance::Euclidean, 42).unwrap();
+        let codes = vec![f16::from_f32(1.0); 3];
+        assert!(matches!(
+            pq.dequantize(&codes),
+            Err(VqError::DimensionMismatch {
+                expected: 4,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_getters_and_roundtrip() {
+        let data = generate_test_data(20, 6);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let pq = ProductQuantizer::new(&data_refs, 3, 2, 10, Distance::Manhattan, 42).unwrap();
+        assert_eq!(pq.num_subspaces(), 3);
+        assert_eq!(pq.sub_dim(), 2);
+        assert_eq!(pq.dim(), 6);
+        assert_eq!(pq.distance_metric(), "manhattan");
+        let codes = pq.quantize(&data[0]).unwrap();
+        let recon = pq.dequantize(&codes).unwrap();
+        assert_eq!(recon.len(), 6);
+        assert!(recon.iter().all(|x| x.is_finite()));
+    }
+
+    #[test]
+    fn test_more_subspaces_than_dimensions() {
+        let data = generate_test_data(10, 2);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let result = ProductQuantizer::new(&data_refs, 4, 2, 10, Distance::Euclidean, 42);
+        assert!(matches!(
+            result,
+            Err(VqError::InvalidParameter { parameter: "m", .. })
+        ));
+    }
+
+    #[test]
     fn test_dimension_not_divisible() {
         let data = [vec![1.0, 2.0, 3.0]];
         let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();

@@ -178,6 +178,22 @@ mod tests {
     }
 
     #[test]
+    fn test_getters() {
+        let sq = ScalarQuantizer::new(-1.0, 1.0, 5).unwrap();
+        assert_eq!(sq.min(), -1.0);
+        assert_eq!(sq.max(), 1.0);
+        assert_eq!(sq.levels(), 5);
+        assert_eq!(sq.step(), 0.5);
+    }
+
+    #[test]
+    fn test_dequantize_matches_level_grid() {
+        let sq = ScalarQuantizer::new(-1.0, 1.0, 5).unwrap();
+        let recon = sq.dequantize(&vec![0, 1, 2, 3, 4]).unwrap();
+        assert_eq!(recon, vec![-1.0, -0.5, 0.0, 0.5, 1.0]);
+    }
+
+    #[test]
     fn test_invalid_range() {
         let result = ScalarQuantizer::new(1.0, -1.0, 5);
         assert!(result.is_err());
