@@ -178,6 +178,15 @@ codes = tsvq.quantize(training[0])
 
 ---
 
+## Training Shortcuts
+
+`ProductQuantizer.fit_transform` and `TSVQ.fit_transform` take the constructor arguments, train the quantizer, and return it together with the codes for the training data:
+
+```python
+pq, codes = pyvq.ProductQuantizer.fit_transform(training, 8, 256, seed=42)
+tsvq, codes = pyvq.TSVQ.fit_transform(training, 6)
+```
+
 ## Batch Methods
 
 Every quantizer also accepts a 2-D array of shape `(n, dim)`:

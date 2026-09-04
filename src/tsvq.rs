@@ -242,6 +242,25 @@ impl TSVQ {
         })
     }
 
+    /// Builds a tree and quantizes the training data in one call.
+    ///
+    /// Returns the quantizer together with one code per training vector, in the
+    /// same order. This is equivalent to [`new`](Self::new) followed by
+    /// [`quantize_batch`](Quantizer::quantize_batch).
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`new`](Self::new).
+    pub fn fit_transform(
+        training_data: &[&[f32]],
+        max_depth: usize,
+        distance: Distance,
+    ) -> VqResult<(Self, Vec<Vec<f16>>)> {
+        let tsvq = Self::new(training_data, max_depth, distance)?;
+        let codes = tsvq.quantize_batch(training_data)?;
+        Ok((tsvq, codes))
+    }
+
     fn validate(self) -> VqResult<Self> {
         if self.dim == 0 || !self.root.has_dimension(self.dim) {
             return Err(VqError::Serialization(
@@ -334,6 +353,22 @@ mod tests {
         let data: Vec<&[f32]> = vec![];
         let result = TSVQ::new(&data, 3, Distance::Euclidean);
         assert!(result.is_err());
+        assert!(TSVQ::fit_transform(&data, 3, Distance::Euclidean).is_err());
+    }
+
+    #[test]
+    fn test_fit_transform_matches_new_and_quantize() {
+        let data: Vec<Vec<f32>> = (0..40)
+            .map(|i| (0..5).map(|j| ((i * 3 + j) % 17) as f32).collect())
+            .collect();
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let (tsvq, codes) = TSVQ::fit_transform(&refs, 3, Distance::Euclidean).unwrap();
+        let direct = TSVQ::new(&refs, 3, Distance::Euclidean).unwrap();
+        assert_eq!(codes.len(), data.len());
+        for (v, c) in data.iter().zip(&codes) {
+            assert_eq!(c, &direct.quantize(v).unwrap());
+            assert_eq!(c, &tsvq.quantize(v).unwrap());
+        }
     }
 
     #[test]

@@ -95,6 +95,30 @@ impl ProductQuantizer {
     ///
     /// Returns:
     ///     Quantized representation as numpy array (float16).
+    /// Train a quantizer and return it together with the codes of the training data.
+    #[staticmethod]
+    #[pyo3(signature = (training_data, num_subspaces, num_centroids, max_iters=10, distance=None, seed=42))]
+    fn fit_transform<'py>(
+        py: Python<'py>,
+        training_data: PyReadonlyArray2<f32>,
+        num_subspaces: usize,
+        num_centroids: usize,
+        max_iters: usize,
+        distance: Option<Distance>,
+        seed: u64,
+    ) -> PyResult<(Self, Bound<'py, PyArray2<f16>>)> {
+        let quantizer = Self::new(
+            training_data.clone(),
+            num_subspaces,
+            num_centroids,
+            max_iters,
+            distance,
+            seed,
+        )?;
+        let codes = quantizer.quantize_batch(py, training_data)?;
+        Ok((quantizer, codes))
+    }
+
     fn quantize<'py>(
         &self,
         py: Python<'py>,

@@ -78,6 +78,20 @@ impl TSVQ {
     ///
     /// Returns:
     ///     Quantized representation (leaf centroid) as numpy array (float16).
+    /// Build a tree and return it together with the codes of the training data.
+    #[staticmethod]
+    #[pyo3(signature = (training_data, max_depth, distance=None))]
+    fn fit_transform<'py>(
+        py: Python<'py>,
+        training_data: PyReadonlyArray2<f32>,
+        max_depth: usize,
+        distance: Option<Distance>,
+    ) -> PyResult<(Self, Bound<'py, PyArray2<f16>>)> {
+        let quantizer = Self::new(training_data.clone(), max_depth, distance)?;
+        let codes = quantizer.quantize_batch(py, training_data)?;
+        Ok((quantizer, codes))
+    }
+
     fn quantize<'py>(
         &self,
         py: Python<'py>,

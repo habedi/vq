@@ -50,6 +50,11 @@ doctest: ## Run documentation tests (Rust code examples in doc comments)
 	@echo "Running documentation tests..."
 	@cargo test --doc --features all
 
+.PHONY: bench
+bench: ## Run the benchmarks (using Criterion) with all features
+	@echo "Running benchmarks..."
+	@cargo bench --features all
+
 .PHONY: test-diff
 test-diff: ## Run differential tests against reference implementations (with and without SIMD and parallel features)
 	@echo "Running differential tests (default features)..."

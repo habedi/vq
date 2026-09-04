@@ -122,6 +122,7 @@ Run the relevant targets for any change:
 | Rust tests      | `make test`       | Format, doctests, and `cargo test --features all` |
 | Rust doctests   | `make doctest`    | Rust documentation tests with all features        |
 | Differential    | `make test-diff`  | Reference comparisons with and without features   |
+| Rust benchmarks | `make bench`      | Criterion benchmarks with all features            |
 | Rust lint       | `make lint`       | `cargo clippy` with warnings denied               |
 | Rust build      | `make build`      | Release build                                     |
 | Coverage        | `make coverage`   | Tarpaulin XML and HTML coverage reports           |

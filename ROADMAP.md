@@ -28,7 +28,7 @@ It outlines features to be implemented and their current status.
 * [x] Persistent serialization (save and load models)
 * [ ] Streaming training support
 * [x] Batch quantization (quantize multiple vectors at once)
-* [ ] `fit_transform` convenience method
+* [x] `fit_transform` convenience method
 
 ### 4. Performance Optimizations
 
@@ -50,7 +50,7 @@ It outlines features to be implemented and their current status.
 
 * [x] `eval` tool for algorithm comparison
 * [ ] CLI for direct file quantization
-* [ ] Benchmark suite (internal `cargo bench`)
+* [x] Benchmark suite (internal `cargo bench`)
 
 ### 7. Documentation and Testing
 

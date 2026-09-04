@@ -22,6 +22,12 @@ pub trait Quantizer {
 ```
 
 `quantize_batch` and `dequantize_batch` process a slice of inputs and stop at the first error.
+The trained quantizers also offer `fit_transform`, which trains and returns the codes for the training data in one call:
+
+```rust
+let (pq, codes) = ProductQuantizer::fit_transform(&refs, 8, 256, 10, Distance::Euclidean, 42)?;
+let (tsvq, codes) = TSVQ::fit_transform(&refs, 6, Distance::Euclidean)?;
+```
 
 ## Persistence
 

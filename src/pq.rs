@@ -172,6 +172,28 @@ impl ProductQuantizer {
         Ok(self)
     }
 
+    /// Trains a product quantizer and quantizes the training data in one call.
+    ///
+    /// Returns the quantizer together with one code per training vector, in the
+    /// same order. This is equivalent to [`new`](Self::new) followed by
+    /// [`quantize_batch`](Quantizer::quantize_batch).
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`new`](Self::new).
+    pub fn fit_transform(
+        training_data: &[&[f32]],
+        m: usize,
+        k: usize,
+        max_iters: usize,
+        distance: Distance,
+        seed: u64,
+    ) -> VqResult<(Self, Vec<Vec<f16>>)> {
+        let pq = Self::new(training_data, m, k, max_iters, distance, seed)?;
+        let codes = pq.quantize_batch(training_data)?;
+        Ok((pq, codes))
+    }
+
     /// Returns the number of subspaces.
     pub fn num_subspaces(&self) -> usize {
         self.m
@@ -335,6 +357,21 @@ mod tests {
             result,
             Err(VqError::InvalidParameter { parameter: "m", .. })
         ));
+    }
+
+    #[test]
+    fn test_fit_transform_matches_new_and_quantize() {
+        let data = generate_test_data(30, 6);
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let (pq, codes) =
+            ProductQuantizer::fit_transform(&refs, 3, 4, 10, Distance::Euclidean, 9).unwrap();
+        let direct = ProductQuantizer::new(&refs, 3, 4, 10, Distance::Euclidean, 9).unwrap();
+        assert_eq!(codes.len(), data.len());
+        for (v, c) in data.iter().zip(&codes) {
+            assert_eq!(c, &direct.quantize(v).unwrap());
+            assert_eq!(c, &pq.quantize(v).unwrap());
+        }
+        assert!(ProductQuantizer::fit_transform(&refs, 4, 4, 10, Distance::Euclidean, 9).is_err());
     }
 
     #[test]

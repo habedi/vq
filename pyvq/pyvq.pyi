@@ -401,6 +401,26 @@ class ProductQuantizer:
         """
         ...
 
+    @staticmethod
+    def fit_transform(
+        training_data: NDArray[np.float32],
+        num_subspaces: int,
+        num_centroids: int,
+        max_iters: int = 10,
+        distance: Optional[Distance] = None,
+        seed: int = 42,
+    ) -> tuple["ProductQuantizer", NDArray[np.float16]]:
+        """
+        Train a quantizer and quantize the training data in one call.
+
+        Returns:
+            The trained quantizer and a 2-D array with one code row per training vector.
+
+        Raises:
+            ValueError: On the same conditions as the constructor.
+        """
+        ...
+
     def quantize(self, vector: NDArray[np.float32]) -> NDArray[np.float16]:
         """
         Quantize a vector.
@@ -539,6 +559,23 @@ class TSVQ:
 
         Raises:
             ValueError: If training data is empty.
+        """
+        ...
+
+    @staticmethod
+    def fit_transform(
+        training_data: NDArray[np.float32],
+        max_depth: int,
+        distance: Optional[Distance] = None,
+    ) -> tuple["TSVQ", NDArray[np.float16]]:
+        """
+        Build a tree and quantize the training data in one call.
+
+        Returns:
+            The trained quantizer and a 2-D array with one code row per training vector.
+
+        Raises:
+            ValueError: On the same conditions as the constructor.
         """
         ...
 
