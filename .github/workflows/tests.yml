@@ -61,3 +61,28 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: false
+
+  test-default-features:
+    # The default build has no SIMD or parallel code paths, so the scalar
+    # fallbacks are only exercised here and in the differential run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Run tests with default features
+        run: cargo test
+
+      - name: Run tests with the parallel feature only
+        run: cargo test --features parallel
+
+      - name: Run differential tests with and without features
+        run: make test-diff
