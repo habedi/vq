@@ -62,4 +62,4 @@ It outlines features to be implemented and their current status.
 * [x] Documentation examples
 * [x] Code coverage setup
 * [x] Python API documentation
-* [ ] Performance benchmarks report
+* [x] Performance benchmarks report

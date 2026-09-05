@@ -28,7 +28,7 @@ For more information about vector quantization, check out
 - Batch quantization and saving and loading of trained quantizers
 - Python 🐍 bindings via [PyVq](https://pypi.org/project/pyvq/) package
 
-See [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
+See [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features and the [benchmarks page](docs/benchmarks.md) for performance numbers.
 
 > [!IMPORTANT]
 > Vq is in early development, so bugs and breaking changes are expected.
