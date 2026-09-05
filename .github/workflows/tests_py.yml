@@ -1,0 +1,78 @@
+name: Run Python Tests
+
+on:
+  workflow_dispatch:
+  schedule: # Run every day at midnight (UTC)
+    - cron: '0 0 * * *'
+  push:
+    branches:
+      - develop
+    paths:
+      - 'pyvq/**'
+      - 'src/**'
+      - 'external/**'
+      - 'build.rs'
+      - 'Cargo.toml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'Makefile'
+      - '.github/workflows/tests_py.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'pyvq/**'
+      - 'src/**'
+      - 'external/**'
+      - 'build.rs'
+      - 'Cargo.toml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'Makefile'
+      - '.github/workflows/tests_py.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --extra dev --python ${{ matrix.python-version }}
+
+      - name: Build PyVq and run the Python tests
+        run: |
+          source .venv/bin/activate
+          make test-py

@@ -1,6 +1,6 @@
 [package]
 name = "vq"
-version = "0.2.1"
+version = "0.3.0"
 description = "A vector quantization library for Rust"
 repository = "https://github.com/CogitatorTech/vq"
 license = "MIT OR Apache-2.0"
@@ -38,11 +38,12 @@ simd = []
 all = ["binaries", "parallel", "simd"]
 
 [dependencies]
-rand = "0.9.0"
-half = "2.4.1"
+rand = "0.10.2"
+half = { version = "2.4.1", features = ["serde"] }
 anyhow = "1.0.95"
-rand_distr = "0.5.0"
+rand_distr = "0.6.0"
 serde = { version = "1.0.217", features = ["derive"] }
+postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 clap = { version = "4.5.29", features = ["derive"] }
 thiserror = "2"
 rayon = { version = "1.10", optional = true }
@@ -52,6 +53,15 @@ cc = "1.0"
 
 [dev-dependencies]
 proptest = "1.5"
+criterion = { version = "=0.7", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "distances"
+harness = false
+
+[[bench]]
+name = "quantizers"
+harness = false
 
 [profile.release]
 strip = "symbols"

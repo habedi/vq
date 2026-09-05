@@ -4,7 +4,9 @@
 //! to one of two discrete levels based on a threshold comparison.
 
 use crate::core::error::{VqError, VqResult};
+use crate::core::persist::impl_persist;
 use crate::core::quantizer::Quantizer;
+use serde::{Deserialize, Serialize};
 
 /// Binary quantizer that maps values above/below a threshold to two discrete levels.
 ///
@@ -18,6 +20,7 @@ use crate::core::quantizer::Quantizer;
 /// let quantized = bq.quantize(&[-1.0, 0.5, 1.0]).unwrap();
 /// assert_eq!(quantized, vec![0, 1, 1]);
 /// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BinaryQuantizer {
     threshold: f32,
     low: u8,
@@ -72,6 +75,10 @@ impl BinaryQuantizer {
         })
     }
 
+    fn validate(self) -> VqResult<Self> {
+        Self::new(self.threshold, self.low, self.high)
+    }
+
     /// Returns the threshold value.
     pub fn threshold(&self) -> f32 {
         self.threshold
@@ -87,6 +94,8 @@ impl BinaryQuantizer {
         self.high
     }
 }
+
+impl_persist!(BinaryQuantizer);
 
 impl Quantizer for BinaryQuantizer {
     type QuantizedOutput = Vec<u8>;

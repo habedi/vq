@@ -25,6 +25,14 @@ pub enum VqError {
     /// FFI operation failed.
     #[error("FFI error: {0}")]
     FfiError(String),
+
+    /// A quantizer could not be encoded to or decoded from bytes.
+    #[error("Serialization error: {0}")]
+    Serialization(String),
+
+    /// Reading or writing a model file failed.
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 /// A specialized Result type for Vq operations.

@@ -6,9 +6,11 @@
 
 use crate::core::distance::Distance;
 use crate::core::error::{VqError, VqResult};
+use crate::core::persist::impl_persist;
 use crate::core::quantizer::Quantizer;
 use crate::core::vector::{Vector, lbg_quantize};
 use half::f16;
+use serde::{Deserialize, Serialize};
 
 /// Product quantizer that divides vectors into subspaces and quantizes each separately.
 ///
@@ -36,6 +38,7 @@ use half::f16;
 /// let quantized = pq.quantize(&training[0]).unwrap();
 /// assert_eq!(quantized.len(), 8);
 /// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProductQuantizer {
     codebooks: Vec<Vec<Vector<f32>>>,
     sub_dim: usize,
@@ -103,6 +106,12 @@ impl ProductQuantizer {
             }
         }
 
+        if m == 0 {
+            return Err(VqError::InvalidParameter {
+                parameter: "m",
+                reason: "must be greater than 0".to_string(),
+            });
+        }
         if dim < m {
             return Err(VqError::InvalidParameter {
                 parameter: "m",
@@ -127,7 +136,7 @@ impl ProductQuantizer {
                     Vector::new(v[start..end].to_vec())
                 })
                 .collect();
-            let codebook = lbg_quantize(&sub_training, k, max_iters, seed + i as u64)?;
+            let codebook = lbg_quantize(&sub_training, k, max_iters, seed.wrapping_add(i as u64))?;
             codebooks.push(codebook);
         }
 
@@ -138,6 +147,51 @@ impl ProductQuantizer {
             dim,
             distance,
         })
+    }
+
+    fn validate(self) -> VqResult<Self> {
+        let invalid = |reason: &str| VqError::Serialization(reason.to_string());
+        if self.m == 0 || self.sub_dim == 0 || self.m * self.sub_dim != self.dim {
+            return Err(invalid("subspace layout does not match the dimension"));
+        }
+        if self.codebooks.len() != self.m {
+            return Err(invalid(
+                "number of codebooks does not match the subspace count",
+            ));
+        }
+        for codebook in &self.codebooks {
+            if codebook.is_empty() {
+                return Err(invalid("codebook has no centroids"));
+            }
+            if codebook.iter().any(|c| c.len() != self.sub_dim) {
+                return Err(invalid(
+                    "centroid dimension does not match the subspace dimension",
+                ));
+            }
+        }
+        Ok(self)
+    }
+
+    /// Trains a product quantizer and quantizes the training data in one call.
+    ///
+    /// Returns the quantizer together with one code per training vector, in the
+    /// same order. This is equivalent to [`new`](Self::new) followed by
+    /// [`quantize_batch`](Quantizer::quantize_batch).
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`new`](Self::new).
+    pub fn fit_transform(
+        training_data: &[&[f32]],
+        m: usize,
+        k: usize,
+        max_iters: usize,
+        distance: Distance,
+        seed: u64,
+    ) -> VqResult<(Self, Vec<Vec<f16>>)> {
+        let pq = Self::new(training_data, m, k, max_iters, distance, seed)?;
+        let codes = pq.quantize_batch(training_data)?;
+        Ok((pq, codes))
     }
 
     /// Returns the number of subspaces.
@@ -160,6 +214,8 @@ impl ProductQuantizer {
         self.distance.name()
     }
 }
+
+impl_persist!(ProductQuantizer);
 
 impl Quantizer for ProductQuantizer {
     type QuantizedOutput = Vec<f16>;
@@ -235,6 +291,87 @@ mod tests {
         let data: Vec<&[f32]> = vec![];
         let result = ProductQuantizer::new(&data, 2, 2, 10, Distance::Euclidean, 42);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_inconsistent_training_dimensions() {
+        let data = [vec![1.0, 2.0], vec![1.0, 2.0, 3.0]];
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let result = ProductQuantizer::new(&data_refs, 1, 1, 10, Distance::Euclidean, 42);
+        assert!(matches!(
+            result,
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_too_many_centroids_for_training_size() {
+        let data = generate_test_data(3, 4);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let result = ProductQuantizer::new(&data_refs, 2, 4, 10, Distance::Euclidean, 42);
+        assert!(matches!(
+            result,
+            Err(VqError::InvalidParameter { parameter: "k", .. })
+        ));
+    }
+
+    #[test]
+    fn test_dequantize_dimension_mismatch() {
+        let data = generate_test_data(20, 4);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let pq = ProductQuantizer::new(&data_refs, 2, 2, 10, Distance::Euclidean, 42).unwrap();
+        let codes = vec![f16::from_f32(1.0); 3];
+        assert!(matches!(
+            pq.dequantize(&codes),
+            Err(VqError::DimensionMismatch {
+                expected: 4,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_getters_and_roundtrip() {
+        let data = generate_test_data(20, 6);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let pq = ProductQuantizer::new(&data_refs, 3, 2, 10, Distance::Manhattan, 42).unwrap();
+        assert_eq!(pq.num_subspaces(), 3);
+        assert_eq!(pq.sub_dim(), 2);
+        assert_eq!(pq.dim(), 6);
+        assert_eq!(pq.distance_metric(), "manhattan");
+        let codes = pq.quantize(&data[0]).unwrap();
+        let recon = pq.dequantize(&codes).unwrap();
+        assert_eq!(recon.len(), 6);
+        assert!(recon.iter().all(|x| x.is_finite()));
+    }
+
+    #[test]
+    fn test_more_subspaces_than_dimensions() {
+        let data = generate_test_data(10, 2);
+        let data_refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let result = ProductQuantizer::new(&data_refs, 4, 2, 10, Distance::Euclidean, 42);
+        assert!(matches!(
+            result,
+            Err(VqError::InvalidParameter { parameter: "m", .. })
+        ));
+    }
+
+    #[test]
+    fn test_fit_transform_matches_new_and_quantize() {
+        let data = generate_test_data(30, 6);
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let (pq, codes) =
+            ProductQuantizer::fit_transform(&refs, 3, 4, 10, Distance::Euclidean, 9).unwrap();
+        let direct = ProductQuantizer::new(&refs, 3, 4, 10, Distance::Euclidean, 9).unwrap();
+        assert_eq!(codes.len(), data.len());
+        for (v, c) in data.iter().zip(&codes) {
+            assert_eq!(c, &direct.quantize(v).unwrap());
+            assert_eq!(c, &pq.quantize(v).unwrap());
+        }
+        assert!(ProductQuantizer::fit_transform(&refs, 4, 4, 10, Distance::Euclidean, 9).is_err());
     }
 
     #[test]

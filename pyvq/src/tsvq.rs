@@ -1,7 +1,11 @@
+use crate::batch;
 use half::f16;
-use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
-use pyo3::exceptions::PyValueError;
+use numpy::{
+    IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods,
+};
+use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 use vq::tsvq::TSVQ as VqTSVQ;
 use vq::{Distance as VqDistance, Quantizer};
 
@@ -60,9 +64,7 @@ impl TSVQ {
             .collect();
 
         let training_refs: Vec<&[f32]> = training_vec.iter().map(|v| v.as_slice()).collect();
-        let dist = distance
-            .map(|d| d.metric)
-            .unwrap_or(VqDistance::Euclidean);
+        let dist = distance.map(|d| d.metric).unwrap_or(VqDistance::Euclidean);
 
         VqTSVQ::new(&training_refs, max_depth, dist)
             .map(|q| TSVQ { quantizer: q })
@@ -76,6 +78,20 @@ impl TSVQ {
     ///
     /// Returns:
     ///     Quantized representation (leaf centroid) as numpy array (float16).
+    /// Build a tree and return it together with the codes of the training data.
+    #[staticmethod]
+    #[pyo3(signature = (training_data, max_depth, distance=None))]
+    fn fit_transform<'py>(
+        py: Python<'py>,
+        training_data: PyReadonlyArray2<f32>,
+        max_depth: usize,
+        distance: Option<Distance>,
+    ) -> PyResult<(Self, Bound<'py, PyArray2<f16>>)> {
+        let quantizer = Self::new(training_data.clone(), max_depth, distance)?;
+        let codes = quantizer.quantize_batch(py, training_data)?;
+        Ok((quantizer, codes))
+    }
+
     fn quantize<'py>(
         &self,
         py: Python<'py>,
@@ -110,6 +126,67 @@ impl TSVQ {
     }
 
     /// The expected input vector dimension.
+    /// Quantize every row of a 2-D array at once.
+    fn quantize_batch<'py>(
+        &self,
+        py: Python<'py>,
+        vectors: PyReadonlyArray2<f32>,
+    ) -> PyResult<Bound<'py, PyArray2<f16>>> {
+        let rows = batch::rows(&vectors)?;
+        let result = py
+            .detach(|| self.quantizer.quantize_batch(&rows))
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        batch::to_array2(py, result, vectors.shape()[1])
+    }
+
+    /// Reconstruct every row of a 2-D array of codes at once.
+    fn dequantize_batch<'py>(
+        &self,
+        py: Python<'py>,
+        codes: PyReadonlyArray2<f16>,
+    ) -> PyResult<Bound<'py, PyArray2<f32>>> {
+        let rows: Vec<Vec<f16>> = batch::rows(&codes)?
+            .into_iter()
+            .map(|r| r.to_vec())
+            .collect();
+        let result = py
+            .detach(|| self.quantizer.dequantize_batch(&rows))
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        batch::to_array2(py, result, codes.shape()[1])
+    }
+
+    /// Encode the quantizer into bytes.
+    fn to_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        let bytes = self
+            .quantizer
+            .to_bytes()
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(PyBytes::new(py, &bytes))
+    }
+
+    /// Restore a quantizer from bytes produced by `to_bytes`.
+    #[staticmethod]
+    fn from_bytes(data: &[u8]) -> PyResult<Self> {
+        VqTSVQ::from_bytes(data)
+            .map(|q| Self { quantizer: q })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Write the quantizer to a file.
+    fn save(&self, path: std::path::PathBuf) -> PyResult<()> {
+        self.quantizer
+            .save(path)
+            .map_err(|e| PyIOError::new_err(e.to_string()))
+    }
+
+    /// Read a quantizer from a file written by `save`.
+    #[staticmethod]
+    fn load(path: std::path::PathBuf) -> PyResult<Self> {
+        VqTSVQ::load(path)
+            .map(|q| Self { quantizer: q })
+            .map_err(|e| PyIOError::new_err(e.to_string()))
+    }
+
     #[getter]
     fn dim(&self) -> usize {
         self.quantizer.dim()

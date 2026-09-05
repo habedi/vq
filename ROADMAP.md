@@ -25,14 +25,14 @@ It outlines features to be implemented and their current status.
 * [x] Generic `Vector` struct
 * [x] Codebook training (LBG/k-means)
 * [x] `dequantize` support
-* [ ] Persistent serialization (save and load models)
+* [x] Persistent serialization (save and load models)
 * [ ] Streaming training support
-* [ ] Batch quantization (quantize multiple vectors at once)
-* [ ] `fit_transform` convenience method
+* [x] Batch quantization (quantize multiple vectors at once)
+* [x] `fit_transform` convenience method
 
 ### 4. Performance Optimizations
 
-* [x] Parallel training using mulithreading
+* [x] Parallel training using multithreading
 * [x] Inline hints for hot paths
 * [x] Zero-copy training (allocation reduction)
 * [x] SIMD Acceleration for Intel and AMD CPUs (AVX/AVX2/AVX512)
@@ -46,17 +46,20 @@ It outlines features to be implemented and their current status.
 * [ ] C bindings
 * [ ] Node.js bindings
 
-### 6. Tools & Binaries
+### 6. Tools and Binaries
 
 * [x] `eval` tool for algorithm comparison
 * [ ] CLI for direct file quantization
-* [ ] Benchmark suite (internal `cargo bench`)
+* [x] Benchmark suite (internal `cargo bench`)
 
-### 7. Documentation & Testing
+### 7. Documentation and Testing
 
 * [x] Rust unit tests
 * [x] Integration tests
+* [x] Regression tests
+* [x] Property-based tests (Rust and Python)
+* [x] Differential tests against reference implementations (Rust and Python)
 * [x] Documentation examples
 * [x] Code coverage setup
 * [x] Python API documentation
-* [ ] Performance benchmarks report
+* [x] Performance benchmarks report

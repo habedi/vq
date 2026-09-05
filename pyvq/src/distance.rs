@@ -14,7 +14,7 @@ use vq::core::distance::Distance as VqDistance;
 ///     >>> b = np.array([3.0, 4.0], dtype=np.float32)
 ///     >>> dist.compute(a, b)
 ///     2.8284...
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct Distance {
     pub(crate) metric: VqDistance,
@@ -39,7 +39,7 @@ impl Distance {
             _ => {
                 return Err(PyValueError::new_err(
                     "Invalid distance metric. Choose from: euclidean, squared_euclidean, cosine, manhattan",
-                ))
+                ));
             }
         };
         Ok(Distance { metric: m })

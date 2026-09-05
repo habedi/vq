@@ -45,6 +45,7 @@ nav:
   - Getting Started: getting-started.md
   - Examples: examples.md
   - API Reference: api-reference.md
+  - Benchmarks: benchmarks.md
 
 markdown_extensions:
   - pymdownx.highlight:

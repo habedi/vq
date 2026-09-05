@@ -60,4 +60,63 @@ pub trait Quantizer {
     ///
     /// Returns an error if the quantized representation is invalid.
     fn dequantize(&self, quantized: &Self::QuantizedOutput) -> VqResult<Vec<f32>>;
+
+    /// Quantizes several vectors at once.
+    ///
+    /// The default implementation calls [`quantize`](Self::quantize) on each vector.
+    /// With the `parallel` feature, the vectors are processed concurrently.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first error produced by [`quantize`](Self::quantize).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use vq::{Quantizer, ScalarQuantizer};
+    ///
+    /// let sq = ScalarQuantizer::new(0.0, 1.0, 11).unwrap();
+    /// let batch: Vec<&[f32]> = vec![&[0.0, 0.5], &[1.0, 0.2]];
+    /// let codes = sq.quantize_batch(&batch).unwrap();
+    /// assert_eq!(codes, vec![vec![0, 5], vec![10, 2]]);
+    /// ```
+    fn quantize_batch(&self, vectors: &[&[f32]]) -> VqResult<Vec<Self::QuantizedOutput>>
+    where
+        Self: Sync,
+        Self::QuantizedOutput: Send,
+    {
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            vectors.par_iter().map(|v| self.quantize(v)).collect()
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            vectors.iter().map(|v| self.quantize(v)).collect()
+        }
+    }
+
+    /// Reconstructs several vectors at once.
+    ///
+    /// The default implementation calls [`dequantize`](Self::dequantize) on each item.
+    /// With the `parallel` feature, the items are processed concurrently.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first error produced by [`dequantize`](Self::dequantize).
+    fn dequantize_batch(&self, quantized: &[Self::QuantizedOutput]) -> VqResult<Vec<Vec<f32>>>
+    where
+        Self: Sync,
+        Self::QuantizedOutput: Sync,
+    {
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            quantized.par_iter().map(|q| self.dequantize(q)).collect()
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            quantized.iter().map(|q| self.dequantize(q)).collect()
+        }
+    }
 }

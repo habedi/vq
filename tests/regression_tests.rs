@@ -269,9 +269,25 @@ fn test_cosine_distance_result_clamped() {
 
     let dist = Distance::CosineDistance.compute(&a, &b).unwrap();
 
-    // Distance should be in valid range [0, 1]
-    assert!((0.0..=1.0).contains(&dist));
+    // Distance should be in valid range [0, 2]
+    assert!((0.0..=2.0).contains(&dist));
     assert!(dist.abs() < 1e-6); // Should be very close to 0
+}
+
+#[test]
+fn test_cosine_distance_opposite_vectors_is_two() {
+    // Bug: the scalar path clamped cosine distance to [0, 1], which collapsed every
+    // negatively correlated pair to 1.0 and disagreed with the SIMD path
+    let a = vec![1.0, 0.0, 0.0];
+    let b = vec![-1.0, 0.0, 0.0];
+
+    let dist = Distance::CosineDistance.compute(&a, &b).unwrap();
+    assert!((dist - 2.0).abs() < 1e-6);
+
+    // Ordering must be preserved: orthogonal is closer than opposite
+    let c = vec![0.0, 1.0, 0.0];
+    let orthogonal = Distance::CosineDistance.compute(&a, &c).unwrap();
+    assert!(orthogonal < dist);
 }
 
 // =============================================================================
@@ -294,6 +310,96 @@ fn test_tsvq_handles_nan_in_training_data() {
     // Either succeeds (filtering NaN) or returns appropriate error
     // The important thing is it doesn't panic
     assert!(result.is_ok() || result.is_err());
+}
+
+#[test]
+fn test_tsvq_handles_all_nan_training_data() {
+    // Bug: when every value on the split dimension was NaN, the median lookup
+    // indexed into an empty vector and panicked
+    let training = [
+        vec![f32::NAN, f32::NAN],
+        vec![f32::NAN, f32::NAN],
+        vec![f32::NAN, f32::NAN],
+    ];
+    let refs: Vec<&[f32]> = training.iter().map(|v| v.as_slice()).collect();
+
+    let tsvq = TSVQ::new(&refs, 3, Distance::SquaredEuclidean).unwrap();
+    let quantized = tsvq.quantize(&[1.0, 2.0]).unwrap();
+    assert_eq!(quantized.len(), 2);
+}
+
+// =============================================================================
+// Bug Fix: lbg_quantize stopped early after reseeding an empty cluster
+// =============================================================================
+
+#[test]
+fn test_lbg_quantize_refines_reseeded_centroids() {
+    // Bug: replacing an empty cluster's centroid with a random point did not mark the
+    // iteration as changed, so the loop could exit with an unrefined centroid.
+    // When both initial centroids are the duplicated global mean, the first cluster is
+    // already stable and the second is empty, so the old code returned the random
+    // replacement without ever assigning points to it.
+    let data = vec![
+        Vector::new(vec![0.0, 0.0]),
+        Vector::new(vec![10.0, 10.0]),
+        Vector::new(vec![5.0, 5.0]),
+        Vector::new(vec![5.0, 5.0]),
+    ];
+
+    for seed in 0..200u64 {
+        let centroids = lbg_quantize(&data, 2, 100, seed).unwrap();
+        // Every returned centroid must be the mean of the points assigned to it
+        for c in &centroids {
+            let assigned: Vec<&Vector<f32>> = data
+                .iter()
+                .filter(|v| {
+                    let d = v.distance2(c);
+                    centroids.iter().all(|other| d <= v.distance2(other))
+                })
+                .collect();
+            assert!(
+                !assigned.is_empty(),
+                "seed {seed}: centroid {c} owns no points"
+            );
+            let n = assigned.len() as f32;
+            for (i, &x) in c.data.iter().enumerate() {
+                let mean: f32 = assigned.iter().map(|v| v.data[i]).sum::<f32>() / n;
+                assert!(
+                    (x - mean).abs() < 1e-5,
+                    "seed {seed}: centroid {c} is not a cluster mean"
+                );
+            }
+        }
+    }
+}
+
+// =============================================================================
+// Bug Fix: ProductQuantizer panicked on zero subspaces or a maximal seed
+// =============================================================================
+
+#[test]
+fn test_product_quantizer_rejects_zero_subspaces() {
+    // Bug: m == 0 reached `dim % m` and panicked with a division by zero
+    let training = [vec![1.0, 2.0, 3.0, 4.0], vec![5.0, 6.0, 7.0, 8.0]];
+    let refs: Vec<&[f32]> = training.iter().map(|v| v.as_slice()).collect();
+
+    let result = ProductQuantizer::new(&refs, 0, 2, 10, Distance::Euclidean, 42);
+    assert!(matches!(
+        result,
+        Err(VqError::InvalidParameter { parameter: "m", .. })
+    ));
+}
+
+#[test]
+fn test_product_quantizer_accepts_max_seed() {
+    // Bug: `seed + i` overflowed for seed == u64::MAX and panicked in debug builds
+    let training: Vec<Vec<f32>> = (0..20)
+        .map(|i| (0..4).map(|j| (i * 4 + j) as f32).collect())
+        .collect();
+    let refs: Vec<&[f32]> = training.iter().map(|v| v.as_slice()).collect();
+
+    let pq = ProductQuantizer::new(&refs, 2, 2, 5, Distance::Euclidean, u64::MAX).unwrap();
+    assert_eq!(pq.num_subspaces(), 2);
 }
 
 // =============================================================================

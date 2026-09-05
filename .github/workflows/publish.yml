@@ -23,7 +23,7 @@ jobs:
     if: success()
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive

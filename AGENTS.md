@@ -27,11 +27,13 @@ Priorities, in order:
 
 ## Writing Style
 
+- Write in simple, plain English. Use short sentences and everyday words.
 - Use Oxford commas in inline lists: "a, b, and c" not "a, b, c".
 - Do not use em dashes. Restructure the sentence, or use a colon or semicolon instead.
 - Avoid colorful adjectives and adverbs. Write "vector quantization library" not "powerful vector quantization library".
 - Use noun phrases for checklist items, not imperative verbs. Write "distance metric coverage" not "cover distance metrics".
-- Headings in Markdown files must be in title case: "Build from Source" not "Build from source". Minor words (a, an, the, and, but, or, for, in, on, at, to, by, of, is, are, was, were, be) stay lowercase unless they are the first word.
+- Headings in Markdown files must be in title case: "Build from Source" not "Build from source". Minor words (a, an, the, and, but, or, for, in, on,
+  at, to, by, of, is, are, was, were, be) stay lowercase unless they are the first word.
 
 ## Repository Layout
 
@@ -55,14 +57,14 @@ Priorities, in order:
 
 ### Rust Crate
 
-The Rust crate targets edition 2024 and Rust 1.85 or later.
-Public consumers primarily use the quantizer types (`BinaryQuantizer`, `ScalarQuantizer`, `ProductQuantizer`, and `TSVQ`), the `Quantizer` trait, `Distance`, and the `VqResult` / `VqError` error types.
-Keep public API changes deliberate because they affect both Rust users and Python bindings.
+The Rust crate targets edition 2024 and Rust 1.85 or later. Public consumers primarily use the quantizer types (`BinaryQuantizer`, `ScalarQuantizer`,
+`ProductQuantizer`, and `TSVQ`), the `Quantizer` trait, `Distance`, and the `VqResult` / `VqError` error types. Keep public API changes deliberate
+because they affect both Rust users and Python bindings.
 
 ### Quantizer API
 
-Quantizers expose training or construction, quantization, and dequantization paths through concrete types and the shared `Quantizer` trait.
-New or changed quantizer behavior should include tests for:
+Quantizers expose training or construction, quantization, and dequantization paths through concrete types and the shared `Quantizer` trait. New or
+changed quantizer behavior should include tests for:
 
 - Valid inputs and expected output shapes.
 - Invalid dimensions, invalid parameters, and empty data when applicable.
@@ -77,20 +79,18 @@ New or changed quantizer behavior should include tests for:
 - `simd`: Enables C SIMD acceleration through `external/hsdlib` and `build.rs`.
 - `all`: Enables `binaries`, `parallel`, and `simd`.
 
-When changing feature-gated code, verify that the relevant feature combinations still compile.
-At minimum, test the feature set touched by the change and the `all` feature set when practical.
+When changing feature-gated code, verify that the relevant feature combinations still compile. At minimum, test the feature set touched by the change
+and the `all` feature set when practical.
 
 ### SIMD and FFI
 
-The `simd` feature uses `external/hsdlib` through C FFI.
-Treat changes in `build.rs`, `external/hsdlib/`, and FFI modules as memory-safety-sensitive.
-Validate pointer lifetimes, slice lengths, alignment assumptions, CPU feature detection, and fallback behavior.
-Run sanitizer or careful checks when changing unsafe Rust or C integration paths.
+The `simd` feature uses `external/hsdlib` through C FFI. Treat changes in `build.rs`, `external/hsdlib/`, and FFI modules as memory-safety-sensitive.
+Validate pointer lifetimes, slice lengths, alignment assumptions, CPU feature detection, and fallback behavior. Run sanitizer or careful checks when
+changing unsafe Rust or C integration paths.
 
 ### Python Bindings
 
-The Python package lives under `pyvq/` and is built with Maturin.
-Python tests are configured through `pyproject.toml` and run with `make test-py`.
+The Python package lives under `pyvq/` and is built with Maturin. Python tests are configured through `pyproject.toml` and run with `make test-py`.
 When Rust API changes affect exported Python behavior, update Python bindings, type stubs, docs, and tests together.
 
 ## Rust Conventions
@@ -116,29 +116,29 @@ When Rust API changes affect exported Python behavior, update Python bindings, t
 
 Run the relevant targets for any change:
 
-| Target             | Command             | What It Runs                                      |
-|--------------------|---------------------|---------------------------------------------------|
-| Rust format        | `make format`       | `cargo fmt`                                       |
-| Rust tests         | `make test`         | Format, doctests, and `cargo test --features all` |
-| Rust doctests      | `make doctest`      | Rust documentation tests with all features        |
-| Rust lint          | `make lint`         | `cargo clippy` with warnings denied               |
-| Rust build         | `make build`        | Release build                                     |
-| Rust benchmarks    | `make bench`        | `cargo bench --features all`                      |
-| Coverage           | `make coverage`     | Tarpaulin XML and HTML coverage reports           |
-| Security audit     | `make audit`        | `cargo audit`                                     |
-| Careful checks     | `make careful`      | `cargo careful run`                               |
-| Rust docs          | `make docs`         | Rust documentation generation                     |
-| Evaluation         | `make eval-all`     | Evaluation binaries for BQ, SQ, PQ, and TSVQ      |
-| Python develop     | `make develop-py`   | Maturin development install                       |
-| Python tests       | `make test-py`      | Pytest for `pyvq`                                 |
-| Python docs        | `make docs-py`      | PyVq MkDocs build                                 |
-| Project docs       | `make docs-build`   | Main MkDocs build                                 |
-| Git hooks          | `make test-hooks`   | Pre-commit hooks on all files                     |
+| Target          | Command           | What It Runs                                      |
+|-----------------|-------------------|---------------------------------------------------|
+| Rust format     | `make format`     | `cargo fmt`                                       |
+| Rust tests      | `make test`       | Format, doctests, and `cargo test --features all` |
+| Rust doctests   | `make doctest`    | Rust documentation tests with all features        |
+| Differential    | `make test-diff`  | Reference comparisons with and without features   |
+| Rust benchmarks | `make bench`      | Criterion benchmarks with all features            |
+| Rust lint       | `make lint`       | `cargo clippy` with warnings denied               |
+| Rust build      | `make build`      | Release build                                     |
+| Coverage        | `make coverage`   | Tarpaulin XML and HTML coverage reports           |
+| Security audit  | `make audit`      | `cargo audit`                                     |
+| Careful checks  | `make careful`    | `cargo careful run`                               |
+| Rust docs       | `make docs`       | Rust documentation generation                     |
+| Evaluation      | `make eval-all`   | Evaluation binaries for BQ, SQ, PQ, and TSVQ      |
+| Python develop  | `make develop-py` | Maturin development install                       |
+| Python tests    | `make test-py`    | Pytest for `pyvq`                                 |
+| Python docs     | `make docs-py`    | PyVq MkDocs build                                 |
+| Project docs    | `make docs-build` | Main MkDocs build                                 |
+| Git hooks       | `make test-hooks` | Pre-commit hooks on all files                     |
 
-For documentation-only changes, tests may be skipped after reviewing the changed Markdown.
-For public Rust API changes, run `make test`, `make lint`, and relevant documentation checks.
-For Python binding changes, run `make test-py` and update type stubs when needed.
-For unsafe Rust, FFI, SIMD, or memory-sensitive changes, run `make careful` or another appropriate sanitizer-style check.
+For documentation-only changes, tests may be skipped after reviewing the changed Markdown. For public Rust API changes, run `make test`, `make lint`,
+and relevant documentation checks. For Python binding changes, run `make test-py` and update type stubs when needed. For unsafe Rust, FFI, SIMD, or
+memory-sensitive changes, run `make careful` or another appropriate sanitizer-style check.
 
 ## First Contribution Flow
 
@@ -163,6 +163,7 @@ Good first tasks:
 - Include shape and dimensionality checks for vector inputs and outputs.
 - Include negative tests for invalid parameters and incompatible vector dimensions.
 - Compare floating-point results with tolerances instead of exact equality when appropriate.
+- Differential tests in `tests/differential_tests.rs` and `pyvq/tests/test_differential.py` compare the library against reference implementations; extend them when adding a quantizer or distance.
 - Keep long-running benchmark or evaluation workloads out of regular unit tests.
 - Test Python binding behavior when exposed Python APIs change.
 

@@ -14,8 +14,34 @@ pub trait Quantizer {
 
     fn quantize(&self, vector: &[f32]) -> VqResult<Self::QuantizedOutput>;
     fn dequantize(&self, quantized: &Self::QuantizedOutput) -> VqResult<Vec<f32>>;
+
+    // Provided methods; parallel when the `parallel` feature is enabled
+    fn quantize_batch(&self, vectors: &[&[f32]]) -> VqResult<Vec<Self::QuantizedOutput>>;
+    fn dequantize_batch(&self, quantized: &[Self::QuantizedOutput]) -> VqResult<Vec<Vec<f32>>>;
 }
 ```
+
+`quantize_batch` and `dequantize_batch` process a slice of inputs and stop at the first error.
+The trained quantizers also offer `fit_transform`, which trains and returns the codes for the training data in one call:
+
+```rust
+let (pq, codes) = ProductQuantizer::fit_transform(&refs, 8, 256, 10, Distance::Euclidean, 42)?;
+let (tsvq, codes) = TSVQ::fit_transform(&refs, 6, Distance::Euclidean)?;
+```
+
+## Persistence
+
+Every quantizer can be encoded to bytes or written to a file and restored later:
+
+```rust
+let bytes = pq.to_bytes()?;
+let restored = ProductQuantizer::from_bytes(&bytes)?;
+
+pq.save("model.vq")?;
+let loaded = ProductQuantizer::load("model.vq")?;
+```
+
+The encoding is compact and versioned only by the crate: bytes written by one version of Vq are not guaranteed to load in another. Decoding validates the model and returns `VqError::Serialization` or `VqError::InvalidParameter` for malformed input, and `VqError::Io` when a file cannot be read or written.
 
 ## Quantizers
 

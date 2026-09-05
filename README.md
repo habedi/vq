@@ -1,11 +1,12 @@
 ## Vq
 
-[<img alt="tests" src="https://img.shields.io/github/actions/workflow/status/CogitatorTech/vq/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github" height="20">](https://github.com/CogitatorTech/vq/actions/workflows/tests.yml)
-[<img alt="code coverage" src="https://img.shields.io/codecov/c/github/CogitatorTech/vq?style=flat&labelColor=282c34&logo=codecov" height="20">](https://codecov.io/gh/CogitatorTech/vq)
-[<img alt="crates.io" src="https://img.shields.io/crates/v/vq.svg?label=crates.io&style=flat&labelColor=282c34&logo=rust" height="20">](https://crates.io/crates/vq)
-[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-vq-66c2a5?label=docs.rs&style=flat&labelColor=282c34&logo=docs.rs" height="20">](https://docs.rs/vq)
-[![Documentation](https://img.shields.io/badge/docs-read-00acc1?style=flat&labelColor=282c34&logo=readthedocs)](https://CogitatorTech.github.io/vq)
-[<img alt="license" src="https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative" height="20">](https://github.com/CogitatorTech/vq)
+[![Tests](https://img.shields.io/github/actions/workflow/status/CogitatorTech/vq/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/CogitatorTech/vq/actions/workflows/tests.yml)
+[![Code Coverage](https://img.shields.io/codecov/c/github/CogitatorTech/vq?style=flat&labelColor=282c34&logo=codecov)](https://codecov.io/gh/CogitatorTech/vq)
+[![Crates.io](https://img.shields.io/crates/v/vq?label=crates.io&style=flat&labelColor=282c34&logo=rust)](https://crates.io/crates/vq)
+[![PyPI](https://img.shields.io/pypi/v/pyvq?label=pypi&style=flat&labelColor=282c34&logo=pypi&logoColor=white)](https://pypi.org/project/pyvq/)
+[![Docs.rs](https://img.shields.io/docsrs/vq?label=docs.rs&style=flat&labelColor=282c34&logo=docs.rs)](https://docs.rs/vq)
+[![Documentation](https://img.shields.io/badge/docs-read-507ec6?style=flat&labelColor=282c34&logo=readthedocs)](https://CogitatorTech.github.io/vq)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/CogitatorTech/vq#license)
 
 Vq (**v**[ector] **q**[uantizer]) is a vector quantization library for Rust.
 It provides implementations of popular quantization algorithms, including binary quantization (BQ), scalar quantization (SQ),
@@ -24,9 +25,10 @@ For more information about vector quantization, check out
 - Can reduce storage size of input vectors, at least 50% (2x)
 - Good performance via SIMD acceleration (using [Hsdlib](https://github.com/habedi/hsdlib)), multi-threading, and zero-copying
 - Support for multiple distances including Euclidean, cosine, and Manhattan distances
+- Batch quantization and saving and loading of trained quantizers
 - Python 🐍 bindings via [PyVq](https://pypi.org/project/pyvq/) package
 
-See [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
+See [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features and the [benchmarks page](docs/benchmarks.md) for performance numbers.
 
 > [!IMPORTANT]
 > Vq is in early development, so bugs and breaking changes are expected.

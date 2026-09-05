@@ -6,10 +6,13 @@
 
 use crate::core::distance::Distance;
 use crate::core::error::{VqError, VqResult};
+use crate::core::persist::impl_persist;
 use crate::core::quantizer::Quantizer;
 use crate::core::vector::{Vector, mean_vector};
 use half::f16;
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct TSVQNode {
     centroid: Vector<f32>,
     left: Option<Box<TSVQNode>>,
@@ -71,6 +74,15 @@ impl TSVQNode {
             .filter(|&x| !x.is_nan()) // Filter out NaN values before sorting
             .collect();
 
+        // Every value on the split dimension was NaN, so there is nothing to split on
+        if values.is_empty() {
+            return Ok(TSVQNode {
+                centroid,
+                left: None,
+                right: None,
+            });
+        }
+
         // Use total_cmp for stable sorting even with infinities
         values.sort_by(|a, b| a.total_cmp(b));
 
@@ -114,6 +126,13 @@ impl TSVQNode {
         })
     }
 
+    /// Checks that every centroid in the subtree has the given dimension.
+    fn has_dimension(&self, dim: usize) -> bool {
+        self.centroid.len() == dim
+            && self.left.as_ref().is_none_or(|n| n.has_dimension(dim))
+            && self.right.as_ref().is_none_or(|n| n.has_dimension(dim))
+    }
+
     fn find_leaf<'a>(&'a self, vector: &[f32], distance: &Distance) -> VqResult<&'a TSVQNode> {
         match (&self.left, &self.right) {
             (Some(left), Some(right)) => {
@@ -155,6 +174,7 @@ impl TSVQNode {
 /// let quantized = tsvq.quantize(&training[0]).unwrap();
 /// assert_eq!(quantized.len(), 6);
 /// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TSVQ {
     root: TSVQNode,
     dim: usize,
@@ -222,6 +242,34 @@ impl TSVQ {
         })
     }
 
+    /// Builds a tree and quantizes the training data in one call.
+    ///
+    /// Returns the quantizer together with one code per training vector, in the
+    /// same order. This is equivalent to [`new`](Self::new) followed by
+    /// [`quantize_batch`](Quantizer::quantize_batch).
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`new`](Self::new).
+    pub fn fit_transform(
+        training_data: &[&[f32]],
+        max_depth: usize,
+        distance: Distance,
+    ) -> VqResult<(Self, Vec<Vec<f16>>)> {
+        let tsvq = Self::new(training_data, max_depth, distance)?;
+        let codes = tsvq.quantize_batch(training_data)?;
+        Ok((tsvq, codes))
+    }
+
+    fn validate(self) -> VqResult<Self> {
+        if self.dim == 0 || !self.root.has_dimension(self.dim) {
+            return Err(VqError::Serialization(
+                "tree centroids do not match the dimension".to_string(),
+            ));
+        }
+        Ok(self)
+    }
+
     /// Returns the expected input vector dimension.
     pub fn dim(&self) -> usize {
         self.dim
@@ -232,6 +280,8 @@ impl TSVQ {
         self.distance.name()
     }
 }
+
+impl_persist!(TSVQ);
 
 impl Quantizer for TSVQ {
     type QuantizedOutput = Vec<f16>;
@@ -303,5 +353,88 @@ mod tests {
         let data: Vec<&[f32]> = vec![];
         let result = TSVQ::new(&data, 3, Distance::Euclidean);
         assert!(result.is_err());
+        assert!(TSVQ::fit_transform(&data, 3, Distance::Euclidean).is_err());
+    }
+
+    #[test]
+    fn test_fit_transform_matches_new_and_quantize() {
+        let data: Vec<Vec<f32>> = (0..40)
+            .map(|i| (0..5).map(|j| ((i * 3 + j) % 17) as f32).collect())
+            .collect();
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let (tsvq, codes) = TSVQ::fit_transform(&refs, 3, Distance::Euclidean).unwrap();
+        let direct = TSVQ::new(&refs, 3, Distance::Euclidean).unwrap();
+        assert_eq!(codes.len(), data.len());
+        for (v, c) in data.iter().zip(&codes) {
+            assert_eq!(c, &direct.quantize(v).unwrap());
+            assert_eq!(c, &tsvq.quantize(v).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_inconsistent_training_dimensions() {
+        let data = [vec![1.0, 2.0], vec![1.0, 2.0, 3.0]];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        assert!(matches!(
+            TSVQ::new(&refs, 2, Distance::Euclidean),
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_quantize_and_dequantize_dimension_mismatch() {
+        let data = [vec![1.0, 2.0], vec![3.0, 4.0]];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let tsvq = TSVQ::new(&refs, 2, Distance::Euclidean).unwrap();
+        assert!(matches!(
+            tsvq.quantize(&[1.0]),
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 1
+            })
+        ));
+        assert!(matches!(
+            tsvq.dequantize(&vec![f16::from_f32(1.0); 3]),
+            Err(VqError::DimensionMismatch {
+                expected: 2,
+                found: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn test_depth_zero_returns_mean() {
+        let data = [vec![0.0, 2.0], vec![4.0, 6.0]];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let tsvq = TSVQ::new(&refs, 0, Distance::Euclidean).unwrap();
+        let recon = tsvq
+            .dequantize(&tsvq.quantize(&[100.0, 100.0]).unwrap())
+            .unwrap();
+        assert_eq!(recon, vec![2.0, 4.0]);
+        assert_eq!(tsvq.dim(), 2);
+        assert_eq!(tsvq.distance_metric(), "euclidean");
+    }
+
+    #[test]
+    fn test_two_clusters_are_separated() {
+        let data = [
+            vec![0.0, 0.0],
+            vec![0.1, 0.0],
+            vec![10.0, 10.0],
+            vec![10.1, 10.0],
+        ];
+        let refs: Vec<&[f32]> = data.iter().map(|v| v.as_slice()).collect();
+        let tsvq = TSVQ::new(&refs, 1, Distance::SquaredEuclidean).unwrap();
+        let low = tsvq
+            .dequantize(&tsvq.quantize(&[0.5, 0.5]).unwrap())
+            .unwrap();
+        let high = tsvq
+            .dequantize(&tsvq.quantize(&[9.5, 9.5]).unwrap())
+            .unwrap();
+        assert!((low[0] - 0.05).abs() < 1e-2);
+        assert!((high[0] - 10.05).abs() < 1e-2);
     }
 }

@@ -1,5 +1,6 @@
 use half::f16;
 use rand::prelude::{IndexedRandom, SeedableRng, StdRng};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
@@ -74,7 +75,7 @@ impl Real for f16 {
 ///
 /// Wraps a standard `Vec<T>` and provides vector arithmetic operations
 /// like addition, subtraction, dot product, and norm.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Vector<T: Real> {
     /// The underlying data storage.
     pub data: Vec<T>,
@@ -410,7 +411,7 @@ pub fn lbg_quantize(
     }
 
     let mut rng = StdRng::seed_from_u64(seed);
-    let mut centroids: Vec<Vector<f32>> = data.choose_multiple(&mut rng, k).cloned().collect();
+    let mut centroids: Vec<Vector<f32>> = data.sample(&mut rng, k).cloned().collect();
 
     for _ in 0..max_iters {
         // Compute assignments (parallel when feature enabled)
@@ -449,6 +450,8 @@ pub fn lbg_quantize(
                 #[allow(clippy::expect_used)]
                 let random_point = data.choose(&mut rng).expect("data should not be empty");
                 centroids[j] = random_point.clone();
+                // The reseeded centroid has not been refined yet, so keep iterating
+                changed = true;
             }
         }
 
@@ -550,6 +553,123 @@ mod tests {
         let s = format!("{}", a);
         assert!(s.starts_with("Vector ["));
         assert!(s.ends_with("]"));
+    }
+
+    #[test]
+    fn test_real_f16_constants_and_conversions() {
+        assert_eq!(<f16 as Real>::zero().to_f32(), 0.0);
+        assert_eq!(<f16 as Real>::one().to_f32(), 1.0);
+        assert_eq!(<f16 as Real>::from_usize(7).to_f32(), 7.0);
+        assert!(approx_eq(
+            <f16 as Real>::sqrt(f16::from_f32(16.0)).to_f32(),
+            4.0,
+            1e-3
+        ));
+        assert_eq!(<f16 as Real>::abs(f16::from_f32(-2.5)).to_f32(), 2.5);
+        assert_eq!(<f32 as Real>::from_usize(3), 3.0);
+        assert_eq!(<f32 as Real>::abs(-1.5), 1.5);
+    }
+
+    #[test]
+    fn test_accessors() {
+        let v = Vector::new(vec![1.0f32, 2.0]);
+        assert_eq!(v.len(), 2);
+        assert!(!v.is_empty());
+        assert_eq!(v.data(), &[1.0, 2.0]);
+        assert!(Vector::<f32>::new(vec![]).is_empty());
+    }
+
+    #[test]
+    fn test_try_ops_success() {
+        let a = Vector::new(vec![1.0f32, 2.0, 3.0]);
+        let b = Vector::new(vec![4.0f32, 5.0, 6.0]);
+        assert_eq!(a.try_add(&b).unwrap().data, vec![5.0, 7.0, 9.0]);
+        assert_eq!(a.try_sub(&b).unwrap().data, vec![-3.0, -3.0, -3.0]);
+        assert_eq!(b.try_div(2.0).unwrap().data, vec![2.0, 2.5, 3.0]);
+    }
+
+    #[test]
+    fn test_try_div_by_zero() {
+        let a = Vector::new(vec![1.0f32, 2.0]);
+        assert!(matches!(
+            a.try_div(0.0),
+            Err(VqError::InvalidParameter {
+                parameter: "scalar",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn test_scalar_division_operator() {
+        let a = Vector::new(vec![2.0f32, 4.0]);
+        assert_eq!((&a / 2.0).data, vec![1.0, 2.0]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot divide vector by zero")]
+    fn test_scalar_division_operator_by_zero_panics() {
+        let a = Vector::new(vec![2.0f32, 4.0]);
+        let _ = &a / 0.0;
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot add vectors with different dimensions")]
+    fn test_add_operator_dimension_mismatch_panics() {
+        let a = Vector::new(vec![1.0f32, 2.0]);
+        let b = Vector::new(vec![1.0f32]);
+        let _ = &a + &b;
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot subtract vectors with different dimensions")]
+    fn test_sub_operator_dimension_mismatch_panics() {
+        let a = Vector::new(vec![1.0f32, 2.0]);
+        let b = Vector::new(vec![1.0f32]);
+        let _ = &a - &b;
+    }
+
+    #[test]
+    fn test_approx_eq_length_mismatch() {
+        let a = Vector::new(vec![1.0f32, 2.0]);
+        let b = Vector::new(vec![1.0f32]);
+        assert!(!a.approx_eq(&b, 1e-6));
+    }
+
+    #[test]
+    fn test_mean_vector_f16() {
+        let vs = vec![
+            Vector::new(vec![f16::from_f32(1.0), f16::from_f32(3.0)]),
+            Vector::new(vec![f16::from_f32(3.0), f16::from_f32(5.0)]),
+        ];
+        let m = mean_vector(&vs).unwrap();
+        assert_eq!(m.data[0].to_f32(), 2.0);
+        assert_eq!(m.data[1].to_f32(), 4.0);
+    }
+
+    #[test]
+    fn test_lbg_quantize_invalid_parameters() {
+        let data = vec![Vector::new(vec![0.0f32]), Vector::new(vec![1.0f32])];
+        assert!(matches!(
+            lbg_quantize(&[], 1, 10, 0),
+            Err(VqError::EmptyInput)
+        ));
+        assert!(matches!(
+            lbg_quantize(&data, 0, 10, 0),
+            Err(VqError::InvalidParameter { parameter: "k", .. })
+        ));
+        assert!(matches!(
+            lbg_quantize(&data, 3, 10, 0),
+            Err(VqError::InvalidParameter { parameter: "k", .. })
+        ));
+    }
+
+    #[test]
+    fn test_lbg_quantize_zero_iterations_returns_sampled_points() {
+        let data: Vec<Vector<f32>> = (0..5).map(|i| Vector::new(vec![i as f32])).collect();
+        let centroids = lbg_quantize(&data, 2, 0, 3).unwrap();
+        assert_eq!(centroids.len(), 2);
+        assert!(centroids.iter().all(|c| data.contains(c)));
     }
 
     #[test]
